@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Streamlit / local
+.streamlit/
+
+# VS Code
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Data outputs (로그/분석 결과)
+recommendation_logs*.csv
+merged_survey_logs*.csv
+analysis_summary*.xlsx
+
+# Optional: 큰 원본 데이터(원하면 제외)
+# processed_perfumes_fixed.csv
+# processed_perfumes_fixed_OLD.csv
