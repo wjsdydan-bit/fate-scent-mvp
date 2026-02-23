@@ -7,11 +7,22 @@ from korean_lunar_calendar import KoreanLunarCalendar
 from openai import OpenAI
 
 # =========================================================
-# 0) 기본 설정 및 API 세팅
+# 0) 기본 설정 및 프리미엄 스타일 적용
 # =========================================================
-st.set_page_config(page_title="향수 사쥬 (V3)", page_icon="🔮", layout="wide")
+st.set_page_config(page_title="향수 사쥬", page_icon="🔮", layout="wide")
 
-# OpenAI API 클라이언트 (Streamlit Secrets에서 불러오기)
+# UI 디자인을 위한 커스텀 CSS
+st.markdown("""
+    <style>
+    .main { background-color: #f8f9fa; }
+    .stButton>button { width: 100%; border-radius: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; height: 3em; font-weight: bold; }
+    .saju-card { background-color: white; padding: 25px; border-radius: 15px; border-left: 5px solid #764ba2; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    .perfume-card { background-color: white; padding: 20px; border-radius: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #eee; text-align: center; }
+    .result-header { color: #2d3436; font-weight: bold; border-bottom: 2px solid #764ba2; padding-bottom: 10px; margin-top: 30px; }
+    </style>
+    """, unsafe_allow_html=True)
+
+# OpenAI API 클라이언트 세팅
 try:
     client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
     HAS_AI = True
@@ -19,232 +30,143 @@ except Exception:
     HAS_AI = False
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
-# 💡 방금 업데이트한 V3 파일 이름으로 연결!
 DATA_PATH = os.path.join(base_dir, "processed_perfumes_fixed_0223.csv")
-LOG_PATH = os.path.join(base_dir, "recommendation_logs.csv")
-
 ELEMENTS = ["Wood", "Fire", "Earth", "Metal", "Water"]
-ELEMENTS_KO = {"Wood": "목(木/나무)", "Fire": "화(火/불)", "Earth": "토(土/흙)", "Metal": "금(金/쇠)", "Water": "수(水/물)"}
-
-try:
-    import matplotlib.pyplot as plt
-    HAS_MPL = True
-except Exception:
-    HAS_MPL = False
+ELEMENTS_KO = {"Wood": "목(나무)", "Fire": "화(불)", "Earth": "토(흙)", "Metal": "금(쇠)", "Water": "수(물)"}
 
 # =========================================================
-# 1) 만세력 기반 '진짜 사주팔자' 계산 함수
+# 1) 만세력 및 AI 로직 함수
 # =========================================================
 def get_real_saju_elements(year, month, day, hour, minute):
-    """실제 만세력 기반으로 사주팔자(8글자)를 뽑고 오행을 분석"""
     cal = KoreanLunarCalendar()
     cal.setSolarDate(year, month, day)
-    gapja = cal.getGapJaString() # 출력 예: '임신년 을사월 병술일'
-    parts = gapja.split()
-    
-    if len(parts) < 3:
-        return None, None, None, None
+    gapja = cal.getGapJaString().split()
+    if len(gapja) < 3: return None, None, None, None
 
-    year_stem, year_branch = parts[0][0], parts[0][1]
-    month_stem, month_branch = parts[1][0], parts[1][1]
-    day_stem, day_branch = parts[2][0], parts[2][1]
-    
-    # 시주(태어난 시간) 계산 (명리학 자시~해시 기준)
-    stems = "갑을병정무기경신임계"
-    branches = "자축인묘진사오미신유술해"
+    # 사주 8글자 추출
+    year_char, month_char, day_char = gapja[0], gapja[1], gapja[2]
+    stems, branches = "갑을병정무기경신임계", "자축인묘진사오미신유술해"
     
     total_mins = hour * 60 + minute
-    if total_mins >= 23 * 60 + 30 or total_mins < 1 * 60 + 30:
-        time_branch_idx = 0 # 자시
-    else:
-        time_branch_idx = ((total_mins - 90) // 120 + 1) % 12
-        
+    time_branch_idx = 0 if total_mins >= 1410 or total_mins < 90 else ((total_mins - 90) // 120 + 1) % 12
     time_branch = branches[time_branch_idx]
+    time_stem = stems[((stems.find(day_char[0]) % 5) * 2 + time_branch_idx) % 10]
     
-    day_stem_idx = stems.find(day_stem)
-    time_stem_start_idx = (day_stem_idx % 5) * 2
-    time_stem_idx = (time_stem_start_idx + time_branch_idx) % 10
-    time_stem = stems[time_stem_idx]
+    saju_chars = [year_char[0], year_char[1], month_char[0], month_char[1], day_char[0], day_char[1], time_stem, time_branch]
+    element_map = {'갑':'Wood','을':'Wood','인':'Wood','묘':'Wood','병':'Fire','정':'Fire','사':'Fire','오':'Fire','무':'Earth','기':'Earth','진':'Earth','술':'Earth','축':'Earth','미':'Earth','경':'Metal','신':'Metal','유':'Metal','申':'Metal','임':'Water','계':'Water','해':'Water','자':'Water'}
     
-    saju_chars = [year_stem, year_branch, month_stem, month_branch, day_stem, day_branch, time_stem, time_branch]
-    
-    # 명리학 오행 매핑 (목화토금수)
-    element_map = {
-        '갑':'Wood', '을':'Wood', '인':'Wood', '묘':'Wood',
-        '병':'Fire', '정':'Fire', '사':'Fire', '오':'Fire',
-        '무':'Earth', '기':'Earth', '진':'Earth', '술':'Earth', '축':'Earth', '미':'Earth',
-        '경':'Metal', '신':'Metal', '유':'Metal', '申':'Metal',
-        '임':'Water', '계':'Water', '해':'Water', '자':'Water'
-    }
-    
-    elements_count = {'Wood':0, 'Fire':0, 'Earth':0, 'Metal':0, 'Water':0}
-    for char in saju_chars:
-        if char in element_map:
-            elements_count[element_map[char]] += 1
+    counts = {e: 0 for e in ELEMENTS}
+    for c in saju_chars:
+        if c in element_map: counts[element_map[c]] += 1
             
-    sorted_elements = sorted(elements_count.items(), key=lambda x: x[1], reverse=True)
-    strongest = sorted_elements[0][0]
-    weakest = sorted_elements[-1][0] 
-    
-    saju_name = f"{year_stem}{year_branch}년 {month_stem}{month_branch}월 {day_stem}{day_branch}일 {time_stem}{time_branch}시"
-    
-    return saju_name, elements_count, strongest, weakest
+    sorted_e = sorted(counts.items(), key=lambda x: x[1], reverse=True)
+    return f"{year_char} {month_char} {day_char} {time_stem}{time_branch}", counts, sorted_e[0][0], sorted_e[-1][0]
 
-# =========================================================
-# 2) OpenAI 맞춤형 풀이 생성 함수
-# =========================================================
-def generate_saju_ai_reading(saju_name, strongest, weakest, perfume_name, brand, notes):
-    if not HAS_AI:
-        return "⚠️ OpenAI API 키가 설정되지 않아 상세 풀이를 제공할 수 없습니다."
-        
-    strong_ko = ELEMENTS_KO.get(strongest, strongest)
-    weak_ko = ELEMENTS_KO.get(weakest, weakest)
+def generate_ai_reading(saju_name, weakest, perfume):
+    if not HAS_AI: return "AI 풀이를 불러올 수 없습니다."
     
-    system_prompt = """
-    당신은 트렌디하고 통찰력 있는 '향수 사쥬' 마스터이자 수석 조향사입니다.
-    고객의 사주팔자(천간지지)를 분석하고, 부족한 기운을 채워주는 향수를 추천합니다.
-    단순한 분석을 넘어, 이 향수를 뿌렸을 때 고객의 삶에 어떤 '긍정적인 마법(운세 상승)'이 일어나는지 확신에 찬 다정한 말투(해요체)로 설명해 주세요.
-    결과에는 '1. 사주 형국 분석', '2. 향수 처방의 이유', '3. 운세 발복(상승) 효과'를 소제목으로 나누어 가독성 있게 작성해주세요.
+    weak_ko = ELEMENTS_KO.get(weakest)
+    prompt = f"""
+    당신은 명리학자와 조향사가 결합된 '향수 사쥬' 마스터입니다.
+    고객의 사주 [{saju_name}]를 분석한 결과, [{weak_ko}] 기운이 가장 부족합니다.
+    이 부족한 기운을 채우기 위해 [{perfume['Brand']}]의 [{perfume['Name']}] 향수를 처방했습니다.
+    
+    이 향수의 성분과 오행 에너지가 고객의 막힌 운을 어떻게 뚫어주는지, 
+    특히 연애, 재물, 사회적 성공 중 어떤 부분에 마법처럼 작용할지 
+    매우 소름 돋고 다정하게 3문단으로 설명해 주세요. (문단별로 소제목을 붙여주세요)
     """
-    
-    user_prompt = f"""
-    고객의 사주팔자(태어난 연월일시)는 '{saju_name}'입니다. 
-    이 사주에서 가장 과하게 집중된 기운은 '{strong_ko}'이고, 운의 흐름을 뚫어주기 위해 절대적으로 필요한(부족한) 기운은 '{weak_ko}'입니다.
-    이 고객의 '{weak_ko}' 기운을 완벽하게 채워줄 액운 방지용 부적으로 '{notes}' 향을 지닌 '{brand}'의 '{perfume_name}' 향수를 처방했습니다.
-    이 향수를 매일 뿌렸을 때 고객의 연애운, 재물운, 직장운 등이 어떻게 폭발적으로 상승하게 될지 600자 내외로 풀이해 주세요.
-    """
-
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
-            temperature=0.75,
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        return f"사쥬 풀이를 생성하는 중 오류가 발생했습니다: {e}"
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "system", "content": "운명을 바꾸는 향수 전문가입니다."}, {"role": "user", "content": prompt}]
+    )
+    return response.choices[0].message.content
 
 # =========================================================
-# 3) 데이터 로드 및 UI 구성
+# 2) 데이터 로드
 # =========================================================
 @st.cache_data
 def load_data():
     if os.path.exists(DATA_PATH):
-        df = pd.read_csv(DATA_PATH, encoding="utf-8-sig")
-        df["all_text"] = df["all_text"].fillna("").astype(str).str.lower()
-        df["matched_keywords"] = df["matched_keywords"].fillna("").astype(str)
-        for e in ELEMENTS:
-            if e in df.columns:
-                df[e] = pd.to_numeric(df[e], errors="coerce").fillna(0.0)
-            else:
-                df[e] = 0.0
+        df = pd.read_csv(DATA_PATH)
+        df["all_text"] = (df["Name"] + " " + df["Brand"] + " " + df["Notes"]).fillna("").str.lower()
+        for e in ELEMENTS: df[e] = pd.to_numeric(df[e], errors="coerce").fillna(0.0)
         return df
     return pd.DataFrame()
 
 df = load_data()
 
-st.title("🔮 향수 사쥬 (Saju & Scent)")
-st.markdown("당신의 **진짜 사주팔자 8글자**를 분석해, 꽉 막힌 운을 틔워줄 **인생 향수**를 처방해 드립니다.")
+# =========================================================
+# 3) 메인 화면 UI
+# =========================================================
+st.title("🔮 향수 사쥬")
+st.write("나의 **사주팔자**를 분석해, 부족한 기운을 채우고 **운을 바꿔줄 향수**를 처방받으세요.")
 
-with st.form("saju_form"):
-    col1, col2 = st.columns(2)
+with st.container():
+    st.markdown('<div class="saju-card">', unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([2, 1, 1])
     with col1:
-        user_name = st.text_input("이름(또는 닉네임)", placeholder="홍길동")
-        birth_date = st.date_input("생년월일 (양력 기준)", min_value=datetime.date(1940, 1, 1), max_value=datetime.date.today())
+        u_name = st.text_input("성함/닉네임", placeholder="이름을 입력하세요")
     with col2:
-        birth_hour = st.number_input("태어난 시 (0~23)", min_value=0, max_value=23, value=12)
-        birth_min = st.number_input("태어난 분 (0~59)", min_value=0, max_value=59, value=0)
-
-    st.markdown("---")
-    st.markdown("### 🌸 향기 취향 선택")
-    pref_tags = st.multiselect("끌리는 향 (여러 개 선택 가능)", ["꽃향기(플로럴)", "과일향(프루티)", "나무향(우디)", "상큼한(시트러스)", "포근한(머스크)", "달콤한(앰버/바닐라)", "시원한(아쿠아/마린)", "스모키/가죽"])
-    dislike_tags = st.multiselect("피하고 싶은 향", ["꽃향기(플로럴)", "과일향(프루티)", "나무향(우디)", "상큼한(시트러스)", "포근한(머스크)", "달콤한(앰버/바닐라)", "시원한(아쿠아/마린)", "스모키/가죽"])
-
-    submitted = st.form_submit_button("내 사쥬에 맞는 향수 처방받기 ✨")
+        u_birth = st.date_input("생년월일", min_value=datetime.date(1950, 1, 1))
+    with col3:
+        u_time = st.time_input("태어난 시간", datetime.time(12, 0))
+    
+    p_tags = st.multiselect("선호하는 향기", ["우디", "플로럴", "시트러스", "머스크", "프루티", "아쿠아"])
+    d_tags = st.multiselect("기피하는 향기", ["우디", "플로럴", "시트러스", "머스크", "프루티", "아쿠아"])
+    
+    submit = st.button("운명의 향수 처방받기")
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # =========================================================
-# 4) 추천 알고리즘 및 결과 화면
+# 4) 결과 출력
 # =========================================================
-if submitted:
-    if df.empty:
-        st.error("데이터베이스 파일이 없습니다.")
-    elif not user_name:
-        st.warning("이름을 입력해주세요!")
-    else:
-        with st.spinner("만세력을 바탕으로 사주팔자를 분석하고, AI 조향사가 당신만의 향수를 처방 중입니다... ⏳"):
-            
-            # 1. 사주 8글자 및 오행 계산
-            saju_name, element_counts, strongest, weakest = get_real_saju_elements(
-                birth_date.year, birth_date.month, birth_date.day, birth_hour, birth_min
-            )
-            
-            # 2. 추천 로직 (코사인 유사도 + 💡 대중성 가중치)
-            target_vec = [1.0 if e == weakest else (0.0 if e == strongest else 0.5) for e in ELEMENTS]
-            target_norm = math.sqrt(sum(v**2 for v in target_vec))
-            if target_norm == 0: target_norm = 1.0
-
-            famous_brands = ['Jo Malone', 'Diptyque', 'Byredo', 'Aesop', 'Chanel', 'Dior', 'Clean', 'W.Dressroom', 'Forment', 'Tamburins', 'Nonfiction', 'Le Labo', 'Creed', 'John Varvatos', 'Ferrari', 'Acqua di Parma']
-
-            rec_scores = []
-            for idx, row in df.iterrows():
-                # 싫어하는 향 필터링
-                if any(dt in row["all_text"] for dt in dislike_tags):
-                    rec_scores.append(-1)
-                    continue
-                
-                perfume_vec = [float(row[e]) for e in ELEMENTS]
-                p_norm = math.sqrt(sum(v**2 for v in perfume_vec))
-                if p_norm == 0: p_norm = 1.0
-                
-                sim = sum(t * p for t, p in zip(target_vec, perfume_vec)) / (target_norm * p_norm)
-                
-                # 좋아하는 향 가산점
-                if any(pt in row["all_text"] for pt in pref_tags):
-                    sim += 0.15
-                
-                # 💡 [핵심] 대중적인 브랜드 가산점 폭격! (+0.2점)
-                brand_name = str(row["Brand"])
-                if any(fb.lower() in brand_name.lower() for fb in famous_brands):
-                    sim += 0.20
-                    
-                rec_scores.append(sim)
-
-            df["rec_score"] = rec_scores
-            top3 = df[df["rec_score"] > 0].sort_values(by="rec_score", ascending=False).head(3)
-
-            if top3.empty:
-                st.warning("조건에 맞는 향수를 찾지 못했습니다. 취향 필터를 줄여보세요!")
+if submit and u_name:
+    s_name, e_counts, strong, weak = get_real_saju_elements(u_birth.year, u_birth.month, u_birth.day, u_time.hour, u_time.minute)
+    
+    # 추천 알고리즘 (브랜드 가중치 대폭 강화)
+    famous = ['Jo Malone', 'Diptyque', 'Byredo', 'Aesop', 'Chanel', 'Dior', 'Clean', 'Forment', 'Tamburins', 'Nonfiction', 'Le Labo']
+    target = [1.0 if e == weak else (0.0 if e == strong else 0.5) for e in ELEMENTS]
+    
+    res = []
+    for idx, row in df.iterrows():
+        if any(t.lower() in row["all_text"] for t in d_tags): 
+            res.append(-1); continue
+        
+        vec = [row[e] for e in ELEMENTS]
+        sim = sum(t*v for t, v in zip(target, vec)) / (math.sqrt(sum(t**2 for t in target)) * math.sqrt(sum(v**2 for v in vec) or 1))
+        
+        # 💡 강력한 브랜드 가중치 (+0.4) - 이제 웬만하면 유명 브랜드가 1위에 뜹니다.
+        if any(f.lower() in str(row['Brand']).lower() for f in famous): sim += 0.4
+        res.append(sim)
+    
+    df["score"] = res
+    top3 = df.sort_values("score", ascending=False).head(3)
+    
+    st.markdown(f'<h2 class="result-header">✨ {u_name}님의 사주 분석 결과: {s_name}</h2>', unsafe_allow_html=True)
+    
+    # AI 마스터의 설명 (가장 강조)
+    best = top3.iloc[0]
+    with st.spinner("AI 사쥬 마스터가 운명을 분석 중입니다..."):
+        reading = generate_ai_reading(s_name, weak, best)
+        st.markdown(f'<div class="saju-card"><h3>📜 운명을 바꾸는 처방전</h3>{reading}</div>', unsafe_allow_html=True)
+    
+    # 향수 카드 레이아웃
+    st.markdown('<h3 class="result-header">🧴 처방된 향수 Top 3</h3>', unsafe_allow_html=True)
+    cols = st.columns(3)
+    for i, (idx, row) in enumerate(top3.iterrows()):
+        with cols[i]:
+            st.markdown(f'<div class="perfume-card">', unsafe_allow_html=True)
+            # 이미지 처리
+            img = row.get("Image URL")
+            if pd.isna(img) or img == "":
+                st.markdown("🎨 **이미지 준비 중**")
             else:
-                st.success(f"분석 완료! {user_name}님의 사주팔자는 **[{saju_name}]** 입니다.")
-                
-                # 3. AI 맞춤 풀이 호출
-                best_perfume = top3.iloc[0]
-                ai_reading = generate_saju_ai_reading(
-                    saju_name, strongest, weakest, best_perfume["Name"], best_perfume["Brand"], best_perfume["Notes"]
-                )
-                
-                st.markdown("### 💌 수석 조향사 & 명리학자의 맞춤 처방전")
-                st.info(ai_reading)
-                
-                st.markdown("---")
-                st.markdown(f"### 🏆 {user_name}님을 위한 운세 발복 향수 Top 3")
-                
-                for rank, (idx, row) in enumerate(top3.iterrows(), 1):
-                    brand = row["Brand"]
-                    name = row["Name"]
-                    notes = row["Notes"]
-                    
-                    st.markdown(f"**{rank}위. {brand} - {name}**")
-                    st.write(f"- 🌿 **주요 향(Notes):** {notes}")
-                    
-                    # 네이버 쇼핑 링크
-                    query = f"{brand} {name} 향수"
-                    url = f"https://search.shopping.naver.com/search/all?query={query.replace(' ', '%20')}"
-                    st.markdown(f"[🛍️ 네이버 쇼핑에서 검색하기]({url})")
-                    st.markdown("<br>", unsafe_allow_html=True)
-                
-                # 4. 로그 저장 로직 (선택사항, 필요시 추가)
-                # ... (기존 로그 저장 로직 동일) ...
+                st.image(img, use_container_width=True)
+            
+            st.markdown(f"**{row['Brand']}**")
+            st.markdown(f"#### {row['Name']}")
+            st.caption(f"주요 노트: {row['Notes']}")
+            
+            q = f"{row['Brand']} {row['Name']} 향수"
+            st.markdown(f"[네이버 쇼핑]({f'https://search.shopping.naver.com/search/all?query={q.replace(' ', '%20')}'})")
+            st.markdown('</div>', unsafe_allow_html=True)
