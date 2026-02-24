@@ -677,7 +677,6 @@ with st.form("saju_form"):
 
 # =========================================================
 # 8) 분석 및 결과 (✅ 진행률 느낌 + 깔끔한 로딩 + AI까지 한 흐름)
-#    - 이 블록을 너의 기존 8번 블록( if submit: ... )과 통째로 교체해줘
 # =========================================================
 if submit:
     if not user_name.strip():
@@ -688,59 +687,53 @@ if submit:
     calc_hour = None if know_time else b_hour
     calc_min = None if know_time else b_min
 
-    # ✅ 로딩 화면(한번 만들어두고 계속 갱신)
     loading = st.empty()
 
-    # ✅ 로딩용 CSS(매번 주입해도 문제 없지만, 가능하면 상단 CSS로 옮기면 더 깔끔)
+    # ✅ 로딩용 CSS (들여쓰기 무시하고 왼쪽 끝에 배치해야 코드블록으로 인식 안 됨)
     loading_css = """
-    <style>
-      @keyframes pulse-text { 0% {opacity:1;} 50% {opacity:0.45;} 100% {opacity:1;} }
-      @keyframes spin-icon  { 0% {transform:rotate(0deg);} 100% {transform:rotate(360deg);} }
-      @keyframes move-bar   { 0% {transform:translateX(-60%);} 100% {transform:translateX(160%);} }
+<style>
+@keyframes pulse-text { 0% {opacity:1;} 50% {opacity:0.45;} 100% {opacity:1;} }
+@keyframes spin-icon  { 0% {transform:rotate(0deg);} 100% {transform:rotate(360deg);} }
+@keyframes move-bar   { 0% {transform:translateX(-60%);} 100% {transform:translateX(160%);} }
 
-      .loading-box{
-        border:1px solid #e7ecff; border-radius:18px;
-        padding:16px 14px; background:linear-gradient(135deg,#eef4ff 0%,#ffffff 55%,#f7f7ff 100%);
-      }
-      .loading-title{ text-align:center; color:#1e3c72; font-weight:850; margin:6px 0 10px 0; }
-      .loading-sub{ text-align:center; font-size:13px; color:#666; line-height:1.5; margin-top:8px; }
-      .loading-spin{ display:inline-block; animation:spin-icon 1.1s linear infinite; margin-right:6px; }
-      .loading-pulse{ animation:pulse-text 1.6s infinite ease-in-out; }
+.loading-box{
+  border:1px solid #e7ecff; border-radius:18px;
+  padding:16px 14px; background:linear-gradient(135deg,#eef4ff 0%,#ffffff 55%,#f7f7ff 100%);
+}
+.loading-title{ text-align:center; color:#1e3c72; font-weight:850; margin:6px 0 10px 0; }
+.loading-sub{ text-align:center; font-size:13px; color:#666; line-height:1.5; margin-top:8px; }
+.loading-spin{ display:inline-block; animation:spin-icon 1.1s linear infinite; margin-right:6px; }
+.loading-pulse{ animation:pulse-text 1.6s infinite ease-in-out; }
 
-      .progress-wrap{
-        height:10px; border-radius:999px; background:#eef2ff; overflow:hidden;
-        border:1px solid #e7ecff; margin:10px 0 8px 0;
-      }
-      .progress-fill{
-        height:100%; border-radius:999px; width:VAR_W%;
-        background:linear-gradient(90deg,#1e3c72 0%,#2a5298 100%);
-        transition:width 0.35s ease;
-      }
-      /* AI 단계에서 '진짜로 움직이는 느낌' 주는 바(불확정 진행률) */
-      .indeterminate{
-        position:relative; height:10px; border-radius:999px; background:#eef2ff; overflow:hidden;
-        border:1px solid #e7ecff; margin:10px 0 8px 0;
-      }
-      .indeterminate:before{
-        content:""; position:absolute; top:0; left:0; height:100%; width:40%;
-        background:linear-gradient(90deg, rgba(30,60,114,0) 0%, rgba(42,82,152,0.8) 50%, rgba(30,60,114,0) 100%);
-        animation:move-bar 1.1s infinite linear;
-      }
+.progress-wrap{
+  height:10px; border-radius:999px; background:#eef2ff; overflow:hidden;
+  border:1px solid #e7ecff; margin:10px 0 8px 0;
+}
+.progress-fill{
+  height:100%; border-radius:999px; width:100%; /* 파이썬에서 width를 주입할 것임 */
+  background:linear-gradient(90deg,#1e3c72 0%,#2a5298 100%);
+  transition:width 0.35s ease;
+}
+/* AI 단계에서 '진짜로 움직이는 느낌' 주는 바(불확정 진행률) */
+.indeterminate{
+  position:relative; height:10px; border-radius:999px; background:#eef2ff; overflow:hidden;
+  border:1px solid #e7ecff; margin:10px 0 8px 0;
+}
+.indeterminate:before{
+  content:""; position:absolute; top:0; left:0; height:100%; width:40%;
+  background:linear-gradient(90deg, rgba(30,60,114,0) 0%, rgba(42,82,152,0.8) 50%, rgba(30,60,114,0) 100%);
+  animation:move-bar 1.1s infinite linear;
+}
 
-      .step-list{ margin:10px 0 0 0; padding:0; list-style:none; }
-      .step-item{ font-size:13px; color:#555; padding:4px 0; }
-      .step-done{ color:#2a5298; font-weight:700; }
-      .step-now{ color:#1e3c72; font-weight:850; }
-      .step-wait{ color:#888; }
-    </style>
-    """
+.step-list{ margin:10px 0 0 0; padding:0; list-style:none; }
+.step-item{ font-size:13px; color:#555; padding:4px 0; }
+.step-done{ color:#2a5298; font-weight:700; }
+.step-now{ color:#1e3c72; font-weight:850; }
+.step-wait{ color:#888; }
+</style>
+"""
 
     def render_loading(current_step: int, title: str, percent: int, ai_mode: bool = False):
-        """
-        current_step: 1~4
-        percent: 0~95 (AI 단계는 90~95쯤에서 멈추게)
-        ai_mode=True면 불확정 진행 바(왔다갔다) 표시
-        """
         step_texts = [
             "🔮 만세력 스캐닝",
             "🌿 오행 분석",
@@ -764,19 +757,22 @@ if submit:
             f"<div class='progress-wrap'><div class='progress-fill' style='width:{percent}%;'></div></div>"
         )
 
+        # 🚨 HTML 주입 부분. 들여쓰기 없이 왼쪽 벽에 딱 붙여야 렌더링이 깨지지 않음
         loading.markdown(f"""
-        {loading_css}
-        <div class="loading-box">
-          <div class="loading-title loading-pulse">
-            <span class="loading-spin">⏳</span>{title}
-          </div>
-          {bar_html}
-          <ul class="step-list">{steps_html}</ul>
-          <div class="loading-sub">
-            새로고침하지 말고 잠시만 기다려주세요 🙏
-          </div>
-        </div>
-        """, unsafe_allow_html=True)
+{loading_css}
+<div class="loading-box">
+  <div class="loading-title loading-pulse">
+    <span class="loading-spin">⏳</span>{title}
+  </div>
+  {bar_html}
+  <ul class="step-list">
+{steps_html}
+  </ul>
+  <div class="loading-sub">
+    새로고침하지 말고 잠시만 기다려주세요 🙏
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
     # 1) 만세력 스캐닝
     render_loading(current_step=1, title="만세력을 확인하고 있어요…", percent=20, ai_mode=False)
@@ -806,12 +802,12 @@ if submit:
 
     # 4) AI 처방전 작성 (불확정 진행 바 + '진행 중' 느낌)
     render_loading(current_step=4, title="AI 수석 조향사가 처방전을 쓰는 중이에요…", percent=90, ai_mode=True)
-    time.sleep(0.1)  # ✅ 화면 먼저 그려지게 하는 작은 트릭
+    time.sleep(0.1)  # 화면 먼저 그려지게 하는 작은 트릭
 
     reading_result = generate_comprehensive_reading(user_name.strip(), gender, saju_name, strong, weak, top3, know_time)
 
     # 완료 느낌(잠깐 95% 찍고 종료)
-    render_loading(current_step=4, title="마무리 정리 중이에요…", percent=95, ai_mode=False)
+    render_loading(current_step=4, title="마무리 정리 중이에요…", percent=100, ai_mode=False)
     time.sleep(0.15)
 
     # 로딩 종료
