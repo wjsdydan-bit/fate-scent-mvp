@@ -17,21 +17,18 @@ try:
 except Exception:
     OPENAI_SDK_AVAILABLE = False
 
+
 # =========================================================
 # 0) 기본 설정 및 모바일 앱 스타일
 # =========================================================
-st.set_page_config(page_title="향수 사쥬", page_icon="🔮", layout="centered")
+st.set_page_config(page_title="이 향수 사쥬!!", page_icon="🔮", layout="centered")
 
 st.markdown("""
 <style>
-/* ===== 코드 상단 CSS 영역 ===== */
-<style>
-/* 트렌디한 폰트 '프리텐다드' 강제 적용 */
+/* 트렌디한 폰트 '프리텐다드' 적용 */
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 html, body, [class*="css"] { font-family: 'Pretendard', sans-serif; }
 
-.stApp { background-color: #f4f5f7; }
-/* ... 기존 네 CSS 코드 그대로 유지 ... */
 .stApp { background-color: #f4f5f7; }
 .block-container {
     max-width: 520px !important;
@@ -120,6 +117,7 @@ h1 {
 }
 .kpi b { color:#222; }
 .kpi .val { margin-top:4px; font-weight:800; color:#1e3c72; }
+
 .section-card{
   border: 1px solid #eee;
   border-radius: 14px;
@@ -131,6 +129,7 @@ h1 {
 div[data-baseweb="tab-panel"] { padding-top: 10px; }
 </style>
 """, unsafe_allow_html=True)
+
 
 # =========================================================
 # 1) 경로 / 상수 / OpenAI 설정
@@ -184,6 +183,7 @@ if OPENAI_SDK_AVAILABLE:
     except Exception:
         HAS_AI = False
 
+
 # =========================================================
 # 2) 유틸 함수
 # =========================================================
@@ -222,6 +222,54 @@ def get_gender_tone(gender):
     elif gender == "남성":
         return {"suffix": "님", "style": "깔끔하고 직관적인 톤"}
     return {"suffix": "님", "style": "중립적이고 친근한 톤"}
+
+
+# ✅ 요약 탭용: 영어 Notes → 한글 요약(룰 기반)
+def notes_to_korean_summary(notes_text: str) -> str:
+    t = safe_text(notes_text).lower()
+    if not t:
+        return "노트 정보 없음"
+
+    mapping = [
+        (["citrus", "bergamot", "lemon", "orange", "grapefruit", "mandarin", "yuzu", "lime"], "상큼한 시트러스"),
+        (["floral", "rose", "jasmine", "tuberose", "iris", "neroli", "ylang"], "화사한 플로럴"),
+        (["woody", "cedar", "sandalwood", "vetiver", "patchouli", "moss", "oud"], "차분한 우디"),
+        (["musk", "white musk", "clean musk", "soft musk"], "포근한 머스크"),
+        (["vanilla", "tonka", "benzoin", "gourmand", "sweet", "amber"], "달콤한 앰버/바닐라"),
+        (["aquatic", "marine", "sea", "ozonic", "watery", "salt"], "시원한 아쿠아/마린"),
+        (["spicy", "pepper", "ginger", "cinnamon", "warm spicy"], "따뜻한 스파이시"),
+        (["leather", "tobacco", "smoky", "incense", "animalic"], "스모키/가죽 무드"),
+        (["powdery"], "보송한 파우더리"),
+        (["soapy", "aldehyde"], "깔끔한 비누/클린"),
+        (["mint"], "민트처럼 청량함"),
+    ]
+
+    hits = []
+    for kws, ko in mapping:
+        if any(k in t for k in kws):
+            hits.append(ko)
+    hits = list(dict.fromkeys(hits))  # 중복 제거
+
+    if not hits:
+        return "은은하고 부드러운 데일리 향"
+    return " · ".join(hits[:3])
+
+# ✅ 요약 탭용: 부족 기운을 채우는 이유(짧은 동양학 톤)
+def build_east_asian_note_reason(weak_element: str, matched_notes: list[str]) -> str:
+    weak_ko = ELEMENTS_KO.get(weak_element, weak_element)
+    lore = {
+        "Wood": "예부터 목(木)은 ‘성장·확장·생기’로 보았어요. 초록/허브/우디 계열은 새싹이 돋는 느낌처럼 목의 흐름을 깨워주는 향으로 자주 비유됩니다.",
+        "Fire": "화(火)는 ‘활력·온기·표현’과 연결돼요. 시트러스/스파이시처럼 밝고 톡 튀는 향은 기운을 위로 끌어올려 화의 생동감을 살리는 쪽으로 해석됩니다.",
+        "Earth": "토(土)는 ‘안정·중심·포용’의 이미지예요. 머스크/앰버/바닐라처럼 포근하고 감싸는 향은 마음을 붙잡아 주는 토의 성질과 잘 맞는다고 봅니다.",
+        "Metal": "금(金)은 ‘정리·기준·결단’의 이미지가 강해요. 클린/비누/미네랄/민트 계열은 군더더기를 덜어내는 느낌이라 금의 또렷함을 돋운다고 해석합니다.",
+        "Water": "수(水)는 ‘유연·깊이·흐름’이에요. 아쿠아/마린/오존 계열은 물의 결을 떠올리게 해서 수의 흐름을 자연스럽게 살린다고 봅니다.",
+    }
+
+    if matched_notes:
+        notes_ko = ", ".join(matched_notes[:3])
+        return f"당신의 부족한 <b>{weak_ko}</b> 기운을 <b>{notes_ko}</b> 계열 노트가 채워주는 방향이에요. {lore.get(weak_element, '')}"
+    return f"당신의 부족한 <b>{weak_ko}</b> 기운을 채우는 데 도움이 되는 계열로 추천됐어요. {lore.get(weak_element, '')}"
+
 
 # =========================================================
 # 3) 실제 만세력 기반 사주 계산
@@ -266,8 +314,9 @@ def get_real_saju_elements(year, month, day, hour=None, minute=None):
     sorted_e = sorted(counts.items(), key=lambda x: x[1], reverse=True)
     return saju_name, counts, sorted_e[0][0], sorted_e[-1][0], gapja_str
 
+
 # =========================================================
-# 4) AI 풀이 생성 (Fallback 포함) - ✅사주 파트 강화 완성형
+# 4) AI 풀이 생성 (Fallback 포함) - ✅사주 파트 강화
 # =========================================================
 def _strip_code_fences(text: str) -> str:
     if not text:
@@ -322,25 +371,14 @@ def build_ai_reading_prompt_html(user_name, gender, saju_name, strongest, weakes
 [작성 규칙]
 - 초등학생도 이해할 말로 쓰되, 구조는 “전문가처럼 체계적으로”.
 - 사주 파트는 충분히 길게(사용자가 ‘제대로 분석 받았다’ 느낌).
-- 각 큰 섹션에는 최소 1개 “현실 예시(상황)”를 포함해라.
-- 점술처럼 단정하지 말고 “~할 수 있어요 / 도움이 될 수 있어요” 톤 유지.
-- 결과는 반드시 아래 HTML 템플릿의 구조를 지켜라.
+- 각 큰 섹션에는 최소 1개 “현실 예시(상황)” 포함.
+- 점술처럼 단정 금지: “~할 수 있어요 / 도움이 될 수 있어요”.
+- 반드시 아래 HTML 템플릿 구조를 지켜라.
 
-[반드시 포함해야 하는 요소]
-1) 맨 위: 한 단어 정의(딱 한 단어) + 한 줄 비유(1문장) + 강/보완 기운 표기
-2) 사주 분석(길게): 장점/주의점/부족 신호/보완 후 균형/잘 되는 환경(각 문단)
-3) “지금 상태 체크리스트(3개)” 섹션 추가: 사용자가 고개 끄덕일 만한 문장형 체크 3개
-4) “{weak_ko} 보완 루틴(향 말고 행동) 3개” 섹션 추가: 오늘부터 할 수 있는 행동 3개
-5) 운(재물/연애/인간관계)은 각 3~4문장으로, “기운→행동→결과” 흐름으로
-6) 향수 처방 Top3는 기존 구조 유지(한줄 이미지/노트/왜 채우나/기대 효과)
-7) 마지막에 색 2개 + 장소 2곳
-
-[HTML 출력 템플릿 - 반드시 이 구조로]
-<h2 style="color:#1e3c72; text-align:center; font-size:1.6rem; padding: 10px 0; margin: 6px 0 10px 0;">
-(한 단어) — “(한 줄 비유 1문장)”
-</h2>
+[HTML 출력 템플릿]
+<h2 style="color:#1e3c72; text-align:center; font-size:1.6rem; padding: 10px 0; margin: 6px 0 10px 0;">(한 단어) — “(한 줄 비유 1문장)”</h2>
 <div style="text-align:center; font-size:0.95rem; color:#555; margin-bottom: 12px;">강한 기운: {strong_ko} / 보완 기운: {weak_ko}</div>
-<div style="font-size:0.85rem; color:#666; margin-bottom: 12px;">(시간 모름이면 정오 기준 안내 1줄, 아니면 8글자 반영 안내 1줄)</div>
+<div style="font-size:0.85rem; color:#666; margin-bottom: 12px;">(시간 안내 1줄)</div>
 
 <h3 style="margin:14px 0 8px 0;">📜 사주 및 오행 분석</h3>
 <div style="color:#333; line-height:1.75;">
@@ -353,50 +391,42 @@ def build_ai_reading_prompt_html(user_name, gender, saju_name, strongest, weakes
 
 <h3 style="margin:14px 0 8px 0;">✅ 지금 상태 체크(해당되면 {weak_ko} 보완이 특히 도움될 수 있어요)</h3>
 <ul style="line-height:1.75; color:#333;">
-  <li>(체크 1)</li>
-  <li>(체크 2)</li>
-  <li>(체크 3)</li>
+  <li>(체크 1)</li><li>(체크 2)</li><li>(체크 3)</li>
 </ul>
 
 <h3 style="margin:14px 0 8px 0;">🔑 당신에게 꼭 필요한 기운: {weak_ko}</h3>
-<div style="color:#333; line-height:1.75;">(3~4문장 + {weak_ko}를 쉬운 말로 정의(예: 정리/기준/결정/선 긋기) + 현실 예시 1개)</div>
+<div style="color:#333; line-height:1.75;">(3~4문장 + 쉬운 정의 + 현실 예시 1개)</div>
 
 <h3 style="margin:14px 0 8px 0;">🧩 {weak_ko} 보완 루틴(향 말고 ‘행동’으로도 바로 효과 보기)</h3>
-<ol style="line-height:1.75; color:#333;">
-  <li>(아주 쉬운 행동 1)</li>
-  <li>(아주 쉬운 행동 2)</li>
-  <li>(아주 쉬운 행동 3)</li>
-</ol>
+<ol style="line-height:1.75; color:#333;"><li>...</li><li>...</li><li>...</li></ol>
 
 <h3 style="margin:14px 0 8px 0;">💖 향기로 운을 틔웠을 때의 변화</h3>
 <ul style="line-height:1.8; color:#333;">
-  <li><b>💰 재물운:</b> (3~4문장: {weak_ko}→행동 변화→돈 흐름 결과)</li>
-  <li><b>💕 연애운:</b> (3~4문장: {weak_ko}→무드/대화 변화→관계 결과)</li>
-  <li><b>🤝 인간관계:</b> (3~4문장: {weak_ko}→소통/거리감 변화→협업 결과)</li>
+  <li><b>💰 재물운:</b> (3~4문장: {weak_ko}→행동 변화→돈 흐름)</li>
+  <li><b>💕 연애운:</b> (3~4문장: {weak_ko}→무드/대화→관계)</li>
+  <li><b>🤝 인간관계:</b> (3~4문장: {weak_ko}→소통/거리감→협업)</li>
 </ul>
 <div style="font-size:0.92rem; color:#2a5298; margin: 6px 0 12px 0;"><b>이 부족한 {weak_ko} 기운은, 아래 향수들을 통해 일상에서 자연스럽게 보완할 수 있어요.</b></div>
 
 <hr style="border:none; border-top:1px solid #eee; margin: 12px 0;">
 
 <h3 style="margin:14px 0 8px 0;">🧴 맞춤 향수 처방전 (Top 3)</h3>
-
 <div style="border:1px solid #eee; border-radius:12px; padding:12px; margin-bottom:10px;">
   <div style="font-weight:800;">🥇 1위. (브랜드 - 향수명)</div>
-  <div style="margin-top:6px;"><b>한줄 이미지:</b> (감성 1문장)</div>
-  <div style="margin-top:6px;"><b>향기 노트:</b> (원문 그대로)</div>
-  <div style="margin-top:6px;"><b>왜 {weak_ko} 기운을 채우나:</b> (2~3문장)</div>
-  <div style="margin-top:6px;"><b>기대 효과:</b> (2~3문장)</div>
+  <div style="margin-top:6px;"><b>한줄 이미지:</b> ...</div>
+  <div style="margin-top:6px;"><b>향기 노트:</b> ...</div>
+  <div style="margin-top:6px;"><b>왜 {weak_ko} 기운을 채우나:</b> ...</div>
+  <div style="margin-top:6px;"><b>기대 효과:</b> ...</div>
 </div>
-
-(🥈 2위 카드도 동일 구조)
-(🥉 3위 카드도 동일 구조)
+(🥈 2위 카드도 동일)
+(🥉 3위 카드도 동일)
 
 <hr style="border:none; border-top:1px solid #eee; margin: 12px 0;">
 
-<h3 style="margin:14px 0 8px 0;">🍀 깨알 재미 요소</h3>
+<h3 style="margin:14px 0 8px 0;">🍀 당신의 네잎클로버</h3>
 <ul style="line-height:1.8; color:#333;">
-  <li><b>🎨 나와 잘 맞는 색깔:</b> (구체 색 2개)</li>
-  <li><b>📍 나와 잘 맞는 장소:</b> (구체 장소 2곳)</li>
+  <li><b>🎨 나와 잘 맞는 색깔:</b> (2개)</li>
+  <li><b>📍 나와 잘 맞는 장소:</b> (2곳)</li>
 </ul>
 """
     return prompt.strip()
@@ -442,8 +472,8 @@ def generate_local_fallback_reading(user_name, gender, saju_name, strongest, wea
           <div style="font-weight:800;">{medals[i]} {i+1}위. {b} - {n}</div>
           <div style="margin-top:6px;"><b>한줄 이미지:</b> {weak_ko} 기운을 부드럽게 채워주는 ‘무드 보정’ 향이에요.</div>
           <div style="margin-top:6px;"><b>향기 노트:</b> {notes}</div>
-          <div style="margin-top:6px;"><b>왜 {weak_ko} 기운을 채우나:</b> 이 향의 핵심 노트가 {weak_ko}의 이미지(정리/안정/균형)에 닿아 있어요. 그래서 부족한 흐름을 일상에서 자연스럽게 보완해줘요.</div>
-          <div style="margin-top:6px;"><b>기대 효과:</b> 기분이 정돈되고, 선택이 또렷해질 수 있어요. ‘나답게 말하고 행동하는 힘’이 살아날 수 있어요.</div>
+          <div style="margin-top:6px;"><b>왜 {weak_ko} 기운을 채우나:</b> 이 향의 핵심 노트가 {weak_ko}의 이미지(정리/안정/균형)에 닿아 있어요.</div>
+          <div style="margin-top:6px;"><b>기대 효과:</b> 기분이 정돈되고, 선택이 또렷해질 수 있어요.</div>
         </div>
         """
 
@@ -455,65 +485,21 @@ def generate_local_fallback_reading(user_name, gender, saju_name, strongest, wea
 <h3 style="margin:14px 0 8px 0;">📜 사주 및 오행 분석</h3>
 <div style="color:#333; line-height:1.75;">
   <div style="margin-bottom:12px;"><b>1) 강한 기운의 장점</b><br>
-  강한 기운이 뚜렷하면 분위기와 선택 기준이 분명해지는 편이에요.
-  그래서 사람을 보는 감각이 빠르거나, 일의 흐름을 읽는 능력이 좋아질 수 있어요.
-  예를 들면 대화에서 “상대가 원하는 포인트”를 먼저 잡아주는 타입일 가능성이 커요.
+  강한 기운이 뚜렷하면 분위기와 선택 기준이 분명해지는 편이에요. 예: 대화에서 핵심을 빨리 잡는 타입일 수 있어요.
   </div>
-
   <div style="margin-bottom:12px;"><b>2) 강한 기운이 과할 때 주의점</b><br>
-  다만 기운이 한쪽으로 쏠리면, 피곤할 때 판단이 흔들릴 수 있어요.
-  (트리거→반응→결과) 일정이 몰릴 때 → 생각이 많아져 결정을 미룸 → 기회를 놓치는 식으로 나타날 수 있어요.
+  피곤할 때 생각이 많아져 결정을 미루고 기회를 놓칠 수 있어요.
   </div>
-
   <div style="margin-bottom:12px;"><b>3) 부족 기운이 부족할 때 나타나는 신호</b><br>
-  {weak_ko} 기운이 부족하면 ‘정리/기준/결정’이 늦어질 수 있어요.
-  그래서 선택지가 많아질수록 오히려 더 피곤해지거나, 말/관계의 경계가 흐려질 수 있어요.
-  예: 지출 기준이 흔들리거나, 연락/약속의 선을 정하기 어려울 때가 생길 수 있어요.
+  {weak_ko}가 부족하면 정리/기준/결정이 늦어지고 관계의 선 긋기가 어려울 수 있어요.
   </div>
-
   <div style="margin-bottom:12px;"><b>4) 부족 기운을 채우면 생기는 균형</b><br>
-  {weak_ko}가 보완되면 마음이 정돈되고 결정을 내리는 속도가 빨라질 수 있어요.
-  감정은 그대로 따뜻한데, 행동은 더 또렷해지는 느낌이에요.
-  예: “이건 하고, 이건 안 해”가 편해지면서 삶이 가벼워질 수 있어요.
+  마음은 부드럽고, 행동은 또렷해지는 쪽으로 균형이 잡힐 수 있어요.
   </div>
-
   <div style="margin-bottom:12px;"><b>5) 잘 풀리는 환경/관계 스타일</b><br>
-  당신은 안정적인 기준이 있는 환경에서 실력이 더 잘 나올 가능성이 커요.
-  관계도 ‘편하지만 흐트러지지 않는 거리감’이 유지될 때 가장 편해질 수 있어요.
-  예: 역할과 기대치가 명확한 팀/관계에서 강점을 잘 발휘해요.
+  역할과 기준이 명확한 환경에서 강점을 더 잘 발휘할 수 있어요.
   </div>
 </div>
-
-<h3 style="margin:14px 0 8px 0;">✅ 지금 상태 체크(해당되면 {weak_ko} 보완이 특히 도움될 수 있어요)</h3>
-<ul style="line-height:1.75; color:#333;">
-  <li>결정해야 하는데 자꾸 미뤄지고, 머릿속이 복잡하게 느껴진다.</li>
-  <li>돈/시간/관계에서 “기준”이 흔들려서 뒤늦게 후회하는 일이 있다.</li>
-  <li>말을 부드럽게 하고 싶은데, 타이밍을 놓치거나 선 긋기가 어렵다.</li>
-</ul>
-
-<h3 style="margin:14px 0 8px 0;">🔑 당신에게 꼭 필요한 기운: {weak_ko}</h3>
-<div style="color:#333; line-height:1.75;">
-{weak_ko} 기운은 쉽게 말하면 “정리 → 기준 → 결정을 도와주는 힘”이에요.
-이 기운이 채워지면 감정은 풍부하게 유지하면서도, 행동은 더 단단해질 수 있어요.
-예: 약속을 잡을 때도 ‘내 페이스’를 지키는 선택이 쉬워지는 식이에요.
-</div>
-
-<h3 style="margin:14px 0 8px 0;">🧩 {weak_ko} 보완 루틴(향 말고 ‘행동’으로도 바로 효과 보기)</h3>
-<ol style="line-height:1.75; color:#333;">
-  <li>하루 3분: 책상/가방/휴대폰 홈화면 중 “한 군데”만 정리하기</li>
-  <li>결정 피로 줄이기: “오늘의 기준 1개”를 정하고(예: 소비/약속) 그 기준만 지키기</li>
-  <li>관계 선 긋기 연습: 거절 문장 1개를 미리 준비해두기(예: “오늘은 쉬고 내일 답할게!”)</li>
-</ol>
-
-<h3 style="margin:14px 0 8px 0;">💖 향기로 운을 틔웠을 때의 변화</h3>
-<ul style="line-height:1.8; color:#333;">
-  <li><b>💰 재물운:</b> {weak_ko} 기운이 보완되면 ‘돈의 기준’이 생기기 쉬워요. 기준이 생기면 새는 돈이 줄고 선택의 질이 올라갈 수 있어요. 결과적으로 기회가 왔을 때 “잡을 준비”가 되어 있을 가능성이 커져요.</li>
-  <li><b>💕 연애운:</b> 무드가 정돈되면 첫인상이 더 안정적으로 느껴질 수 있어요. 대화에서도 “나의 선”이 생겨서, 오히려 더 매력적으로 보일 수 있어요. 편안한 관계로 이어질 확률이 높아질 수 있어요.</li>
-  <li><b>🤝 인간관계:</b> 소통에서 핵심이 또렷해지면 오해가 줄어들 수 있어요. 협업에서도 역할/기대치가 정리돼서 신뢰가 쌓이기 쉬워요. 결과적으로 도움 주는 사람(귀인)이 붙는 흐름에 도움이 될 수 있어요.</li>
-</ul>
-<div style="font-size:0.92rem; color:#2a5298; margin: 6px 0 12px 0;"><b>이 부족한 {weak_ko} 기운은, 아래 향수들을 통해 일상에서 자연스럽게 보완할 수 있어요.</b></div>
-
-<hr style="border:none; border-top:1px solid #eee; margin: 12px 0;">
 
 <h3 style="margin:14px 0 8px 0;">🧴 맞춤 향수 처방전 (Top 3)</h3>
 {cards_html}
@@ -533,7 +519,6 @@ def generate_comprehensive_reading(user_name, gender, saju_name, strongest, weak
         return generate_local_fallback_reading(user_name, gender, saju_name, strongest, weakest, top3_df, know_time)
 
     prompt = build_ai_reading_prompt_html(user_name, gender, saju_name, strongest, weakest, top3_df, know_time)
-
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -547,12 +532,12 @@ def generate_comprehensive_reading(user_name, gender, saju_name, strongest, weak
         out = _strip_code_fences(out)
 
         # 형식 깨짐 방지
-        if "<h2" not in out or "<h3" not in out or "위." not in out:
+        if "<h2" not in out or "<h3" not in out:
             return generate_local_fallback_reading(user_name, gender, saju_name, strongest, weakest, top3_df, know_time)
         return out
-
     except Exception:
         return generate_local_fallback_reading(user_name, gender, saju_name, strongest, weakest, top3_df, know_time)
+
 
 # =========================================================
 # 5) 로그 저장
@@ -562,10 +547,18 @@ def save_recommendation_log(session_id, user_name, gender, birth_date, know_time
     rows = []
     for rank_idx, (_, row) in enumerate(top3_df.iterrows(), start=1):
         rows.append({
-            "timestamp": now_str, "session_id": session_id, "user_name": user_name, "gender": gender,
-            "birth_date": str(birth_date), "know_time": 0 if know_time else 1, "saju_name": saju_name,
-            "strongest_element": strongest, "weakest_element": weakest, "rank": rank_idx,
-            "perfume_name": safe_text(row.get("Name", "")), "brand": safe_text(row.get("Brand", "")),
+            "timestamp": now_str,
+            "session_id": session_id,
+            "user_name": user_name,
+            "gender": gender,
+            "birth_date": str(birth_date),
+            "know_time": 0 if know_time else 1,  # (기존 코드 유지)
+            "saju_name": saju_name,
+            "strongest_element": strongest,
+            "weakest_element": weakest,
+            "rank": rank_idx,
+            "perfume_name": safe_text(row.get("Name", "")),
+            "brand": safe_text(row.get("Brand", "")),
             "rec_score": float(row.get("score", 0.0))
         })
     df_log = pd.DataFrame(rows)
@@ -577,6 +570,7 @@ def save_recommendation_log(session_id, user_name, gender, birth_date, know_time
         encoding="utf-8-sig"
     )
 
+
 # =========================================================
 # 6) 데이터 로드 및 추천 엔진
 # =========================================================
@@ -584,6 +578,7 @@ def save_recommendation_log(session_id, user_name, gender, birth_date, know_time
 def load_data():
     if not os.path.exists(DATA_PATH):
         return pd.DataFrame()
+
     df = pd.read_csv(DATA_PATH)
 
     for c in ["Name", "Brand", "Notes", "Description", "matched_keywords"]:
@@ -608,6 +603,7 @@ df = load_data()
 def recommend_perfumes(df, weakest, strongest, pref_tags, dislike_tags, brand_filter_mode):
     if df.empty:
         return pd.DataFrame()
+
     work = df.copy()
 
     if brand_filter_mode == "유명 브랜드 위주":
@@ -617,7 +613,6 @@ def recommend_perfumes(df, weakest, strongest, pref_tags, dislike_tags, brand_fi
 
     pref_keywords = tags_to_keywords(pref_tags)
     dislike_keywords = tags_to_keywords(dislike_tags)
-
     target = [1.0 if e == weakest else (0.1 if e == strongest else 0.5) for e in ELEMENTS]
 
     rows = []
@@ -642,10 +637,11 @@ def recommend_perfumes(df, weakest, strongest, pref_tags, dislike_tags, brand_fi
     out = pd.DataFrame(rows).sort_values("score", ascending=False).drop_duplicates(subset=["Name"]).reset_index(drop=True)
     return out
 
+
 # =========================================================
 # 7) 메인 화면 UI
 # =========================================================
-st.markdown("<h1>🔮 향수 사쥬</h1>", unsafe_allow_html=True)
+st.markdown("<h1>🔮 이 향수 사쥬!!</h1>", unsafe_allow_html=True)
 st.markdown('<div class="subtitle">실제 만세력 기반으로 사주 오행을 분석하고<br>부족한 기운을 보완해줄 맞춤 향수를 처방해드려요.</div>', unsafe_allow_html=True)
 
 if df.empty:
@@ -678,8 +674,9 @@ with st.form("saju_form"):
 
     submit = st.form_submit_button("향수 처방 받기")
 
+
 # =========================================================
-# 8) 분석 및 결과
+# 8) 분석 및 결과 (🚀 진짜 실행 시간과 동기화된 로딩 UI 적용)
 # =========================================================
 if submit:
     if not user_name.strip():
@@ -687,29 +684,34 @@ if submit:
         st.stop()
 
     session_id = f"{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:8]}"
-
     calc_hour = None if know_time else b_hour
     calc_min = None if know_time else b_min
 
-    loading = st.empty()
-    for msg in ["🔮 만세력 스캐닝 중...", "🌿 오행 에너지 분석 중...", "✨ 맞춤 향수 배합 중..."]:
-        loading.markdown(f"<h3 style='text-align:center; color:#2a5298; margin: 28px 0;'>{msg}</h3>", unsafe_allow_html=True)
-        time.sleep(0.8)
-    loading.empty()
+    # ✨ st.status를 활용한 '리얼타임 로딩 애니메이션'
+    with st.status("🔮 운명을 바꾸는 향수 처방 중...", expanded=True) as status:
+        st.write("🌿 만세력 스캐닝 및 오행 에너지 분석 중...")
+        result = get_real_saju_elements(birth_date.year, birth_date.month, birth_date.day, calc_hour, calc_min)
+        if result[0] is None:
+            status.update(label="❌ 사주 계산 실패", state="error")
+            st.error("사주 계산에 실패했습니다.")
+            st.stop()
+        
+        saju_name, e_counts, strong, weak, gapja_str = result
 
-    result = get_real_saju_elements(birth_date.year, birth_date.month, birth_date.day, calc_hour, calc_min)
-    if result[0] is None:
-        st.error("사주 계산에 실패했습니다.")
-        st.stop()
+        st.write("✨ 최적의 향수 데이터베이스 매칭 중...")
+        rec_df = recommend_perfumes(df.copy(), weak, strong, pref_tags, dislike_tags, brand_filter_mode)
+        if rec_df.empty or len(rec_df) < 3:
+            status.update(label="❌ 향수 매칭 실패", state="error")
+            st.error("조건에 맞는 향수가 부족해요. 필터를 줄여주세요.")
+            st.stop()
+            
+        top3 = rec_df.head(3).copy()
 
-    saju_name, e_counts, strong, weak, gapja_str = result
-    rec_df = recommend_perfumes(df.copy(), weak, strong, pref_tags, dislike_tags, brand_filter_mode)
-
-    if rec_df.empty or len(rec_df) < 3:
-        st.error("조건에 맞는 향수가 부족해요. 필터를 줄여주세요.")
-        st.stop()
-
-    top3 = rec_df.head(3).copy()
+        st.write("✍️ 사쥬 마스터가 맞춤 처방전을 작성 중입니다... (약 5~10초 소요)")
+        reading_result = generate_comprehensive_reading(user_name.strip(), gender, saju_name, strong, weak, top3, know_time)
+        
+        # 모든 작업이 끝나면 완료 메시지로 바뀜
+        status.update(label="✅ 처방전 작성이 완료되었습니다!", state="complete", expanded=False)
 
     try:
         save_recommendation_log(session_id, user_name.strip(), gender, birth_date, know_time, saju_name, strong, weak, top3)
@@ -717,19 +719,14 @@ if submit:
         pass
 
     st.session_state.update({
-        "top3": top3,
-        "saju_name": saju_name,
-        "e_counts": e_counts,
-        "strong": strong,
-        "weak": weak,
-        "gender": gender,
-        "know_time": know_time,
-        "session_id": session_id,
-        "user_name": user_name.strip()
+        "top3": top3, "saju_name": saju_name, "e_counts": e_counts,
+        "strong": strong, "weak": weak, "gender": gender,
+        "know_time": know_time, "session_id": session_id,
+        "user_name": user_name.strip(), "reading_result": reading_result
     })
 
 # =========================================================
-# ✅ 결과 렌더링 (탭 + 히어로 카드 + 요약 강화)
+# ✅ 결과 렌더링 (탭 + 히어로 카드 + 요약에 한글/동양학 설명)
 # =========================================================
 if "top3" in st.session_state:
     top3 = st.session_state["top3"]
@@ -740,13 +737,9 @@ if "top3" in st.session_state:
     user_name = st.session_state["user_name"]
     gender = st.session_state["gender"]
     session_id = st.session_state["session_id"]
+    reading_result = st.session_state.get("reading_result", "") or ""
 
     st.markdown(f"### {user_name}님의 향수 사쥬 결과")
-
-    # AI 풀이 생성(HTML)
-    with st.spinner("AI가 처방전을 작성 중입니다..."):
-        reading_result = generate_comprehensive_reading(user_name, gender, saju_name, strong, weak, top3, know_time)
-    reading_result = reading_result or ""
 
     # Hero 문장: AI 결과의 <h2> 내용 추출
     hero_text = ""
@@ -783,6 +776,7 @@ if "top3" in st.session_state:
 
     tab1, tab2, tab3, tab4 = st.tabs(["✨ 요약", "📜 사주풀이(자세히)", "🧴 향수 Top3", "📝 시향·설문"])
 
+    # --- 요약 탭(한글 노트 + 동양학 짧은 이유)
     with tab1:
         st.markdown('<div class="section-card">', unsafe_allow_html=True)
         st.markdown(f"**핵심 요약**: 지금은 **{ELEMENTS_KO[weak]}** 기운을 채우는 향이 가장 잘 맞아요.")
@@ -792,13 +786,21 @@ if "top3" in st.session_state:
         st.markdown("#### 🧴 Top 3 추천 (빠르게 보기)")
         for i, (_, row) in enumerate(top3.iterrows()):
             b_name, p_name = safe_text(row.get("Brand")), safe_text(row.get("Name"))
-            notes = safe_text(row.get("Notes", "정보 없음"))
+            notes_raw = safe_text(row.get("Notes", ""))
+            notes_ko = notes_to_korean_summary(notes_raw)
+
+            matched = extract_matching_notes(row, weak, top_n=3)
+            reason = build_east_asian_note_reason(weak, matched)
+
             badges = " ".join([f"<span class='badge'>{x}</span>" for x in get_element_vector_badges(row)])
+
             st.markdown(f"""
             <div class="section-card">
               <div style="font-weight:800;">{['🥇','🥈','🥉'][i]} {b_name} - {p_name}</div>
               <div style="margin-top:6px;">{badges}</div>
-              <div class="small-muted" style="margin-top:6px;"><b>노트:</b> {_html.escape(notes[:180])}{'...' if len(notes)>180 else ''}</div>
+
+              <div class="small-muted" style="margin-top:8px;"><b>향 느낌(한글 요약):</b> {_html.escape(notes_ko)}</div>
+              <div class="small-muted" style="margin-top:6px;"><b>왜 {ELEMENTS_KO[weak]}를 채우나:</b> {reason}</div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -812,13 +814,14 @@ if "top3" in st.session_state:
         with c2:
             st.link_button("📝 1분 설문 참여", survey_url, use_container_width=True)
 
+    # --- 상세 탭(히어로 중복 방지로 h2 제거)
     with tab2:
         st.markdown('<div class="section-card">', unsafe_allow_html=True)
-        # re.sub를 사용해 <h2> 태그 전체를 삭제한 깨끗한 본문 만들기
         reading_body = re.sub(r"<h2[^>]*>.*?</h2>", "", reading_result, flags=re.S | re.I)
         st.markdown(reading_body, unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
-    
+
+    # --- 향수 Top3 탭(시향 버튼)
     with tab3:
         st.markdown("### 🛍️ 추천 향수 시향해보기")
         for i, (_, row) in enumerate(top3.iterrows()):
@@ -827,6 +830,7 @@ if "top3" in st.session_state:
             st.link_button(f"{['🥇','🥈','🥉'][i]} {b_name} - {p_name} 검색하기", naver_url, use_container_width=True)
         st.info("Tip) 가장 끌리는 1개만 먼저 시향해도 충분해요. ‘첫인상’이 맞는지 체크해보세요!")
 
+    # --- 설문 탭
     with tab4:
         st.info("🙋 결과가 어땠나요? 1분 설문이 서비스 개선에 가장 큰 도움이 됩니다!")
         st.link_button("📝 1분 설문 참여하기 (세션ID 자동입력)", survey_url, use_container_width=True)
@@ -836,6 +840,7 @@ if "top3" in st.session_state:
         st.markdown("- 사주풀이 흥미도 / 추천 일치도 / 구매(시향) 의향을 KPI로 관리해요.")
         st.markdown("- 여러분 피드백이 다음 업데이트에 바로 반영됩니다.")
         st.markdown("</div>", unsafe_allow_html=True)
+
 
 # =========================================================
 # 9) 관리자용 로그 (하단 숨김)
