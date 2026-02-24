@@ -654,7 +654,7 @@ with st.form("saju_form"):
     birth_date = st.date_input("생년월일 (양력)", min_value=datetime.date(1950, 1, 1), value=datetime.date(1995, 1, 1))
 
     st.markdown("<p style='font-size:14px; margin-bottom:5px; color:#333; font-weight:bold;'>태어난 시간</p>", unsafe_allow_html=True)
-    know_time = st.checkbox("태어난 시간을 모릅니다 (체크 시 시간 제외 분석)")
+    know_time = st.checkbox("태어난 시간을 몰라요 (체크 시 시간 제외 분석)")
 
     if know_time:
         b_hour, b_min = None, None
@@ -676,7 +676,8 @@ with st.form("saju_form"):
 
 
 # =========================================================
-# 8) 분석 및 결과 (✨ 시각적 연출을 살린 동적 로딩)
+# 8) 분석 및 결과 (✅ 진행률 느낌 + 깔끔한 로딩 + AI까지 한 흐름)
+#    - 이 블록을 너의 기존 8번 블록( if submit: ... )과 통째로 교체해줘
 # =========================================================
 if submit:
     if not user_name.strip():
@@ -687,13 +688,100 @@ if submit:
     calc_hour = None if know_time else b_hour
     calc_min = None if know_time else b_min
 
-    # 1) 빈 도화지 준비
+    # ✅ 로딩 화면(한번 만들어두고 계속 갱신)
     loading = st.empty()
 
-    # 2) 만세력 스캐닝 (시각적 연출을 위해 일부러 0.7초 대기)
-    loading.markdown("<h3 style='text-align:center; color:#2a5298; margin: 40px 0;'>🔮 만세력 스캐닝 중...</h3>", unsafe_allow_html=True)
-    time.sleep(0.7) 
-    
+    # ✅ 로딩용 CSS(매번 주입해도 문제 없지만, 가능하면 상단 CSS로 옮기면 더 깔끔)
+    loading_css = """
+    <style>
+      @keyframes pulse-text { 0% {opacity:1;} 50% {opacity:0.45;} 100% {opacity:1;} }
+      @keyframes spin-icon  { 0% {transform:rotate(0deg);} 100% {transform:rotate(360deg);} }
+      @keyframes move-bar   { 0% {transform:translateX(-60%);} 100% {transform:translateX(160%);} }
+
+      .loading-box{
+        border:1px solid #e7ecff; border-radius:18px;
+        padding:16px 14px; background:linear-gradient(135deg,#eef4ff 0%,#ffffff 55%,#f7f7ff 100%);
+      }
+      .loading-title{ text-align:center; color:#1e3c72; font-weight:850; margin:6px 0 10px 0; }
+      .loading-sub{ text-align:center; font-size:13px; color:#666; line-height:1.5; margin-top:8px; }
+      .loading-spin{ display:inline-block; animation:spin-icon 1.1s linear infinite; margin-right:6px; }
+      .loading-pulse{ animation:pulse-text 1.6s infinite ease-in-out; }
+
+      .progress-wrap{
+        height:10px; border-radius:999px; background:#eef2ff; overflow:hidden;
+        border:1px solid #e7ecff; margin:10px 0 8px 0;
+      }
+      .progress-fill{
+        height:100%; border-radius:999px; width:VAR_W%;
+        background:linear-gradient(90deg,#1e3c72 0%,#2a5298 100%);
+        transition:width 0.35s ease;
+      }
+      /* AI 단계에서 '진짜로 움직이는 느낌' 주는 바(불확정 진행률) */
+      .indeterminate{
+        position:relative; height:10px; border-radius:999px; background:#eef2ff; overflow:hidden;
+        border:1px solid #e7ecff; margin:10px 0 8px 0;
+      }
+      .indeterminate:before{
+        content:""; position:absolute; top:0; left:0; height:100%; width:40%;
+        background:linear-gradient(90deg, rgba(30,60,114,0) 0%, rgba(42,82,152,0.8) 50%, rgba(30,60,114,0) 100%);
+        animation:move-bar 1.1s infinite linear;
+      }
+
+      .step-list{ margin:10px 0 0 0; padding:0; list-style:none; }
+      .step-item{ font-size:13px; color:#555; padding:4px 0; }
+      .step-done{ color:#2a5298; font-weight:700; }
+      .step-now{ color:#1e3c72; font-weight:850; }
+      .step-wait{ color:#888; }
+    </style>
+    """
+
+    def render_loading(current_step: int, title: str, percent: int, ai_mode: bool = False):
+        """
+        current_step: 1~4
+        percent: 0~95 (AI 단계는 90~95쯤에서 멈추게)
+        ai_mode=True면 불확정 진행 바(왔다갔다) 표시
+        """
+        step_texts = [
+            "🔮 만세력 스캐닝",
+            "🌿 오행 분석",
+            "🧴 향수 매칭",
+            "✍️ AI 처방전 작성",
+        ]
+
+        li = []
+        for idx, s in enumerate(step_texts, start=1):
+            if idx < current_step:
+                li.append(f"<li class='step-item step-done'>✅ {s}</li>")
+            elif idx == current_step:
+                li.append(f"<li class='step-item step-now'>👉 {s}</li>")
+            else:
+                li.append(f"<li class='step-item step-wait'>⬜ {s}</li>")
+        steps_html = "\n".join(li)
+
+        bar_html = (
+            "<div class='indeterminate'></div>"
+            if ai_mode else
+            f"<div class='progress-wrap'><div class='progress-fill' style='width:{percent}%;'></div></div>"
+        )
+
+        loading.markdown(f"""
+        {loading_css}
+        <div class="loading-box">
+          <div class="loading-title loading-pulse">
+            <span class="loading-spin">⏳</span>{title}
+          </div>
+          {bar_html}
+          <ul class="step-list">{steps_html}</ul>
+          <div class="loading-sub">
+            새로고침하지 말고 잠시만 기다려주세요 🙏
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # 1) 만세력 스캐닝
+    render_loading(current_step=1, title="만세력을 확인하고 있어요…", percent=20, ai_mode=False)
+    time.sleep(0.25)
+
     result = get_real_saju_elements(birth_date.year, birth_date.month, birth_date.day, calc_hour, calc_min)
     if result[0] is None:
         loading.empty()
@@ -701,10 +789,14 @@ if submit:
         st.stop()
     saju_name, e_counts, strong, weak, gapja_str = result
 
-    # 3) 향수 매칭 (시각적 연출을 위해 일부러 0.7초 대기)
-    loading.markdown("<h3 style='text-align:center; color:#2a5298; margin: 40px 0;'>🌿 오행 기반 맞춤 향수 배합 중...</h3>", unsafe_allow_html=True)
-    time.sleep(0.7)
-    
+    # 2) 오행 분석
+    render_loading(current_step=2, title="오행 에너지를 분석하고 있어요…", percent=45, ai_mode=False)
+    time.sleep(0.25)
+
+    # 3) 향수 매칭
+    render_loading(current_step=3, title="부족한 기운을 채울 향을 고르는 중이에요…", percent=70, ai_mode=False)
+    time.sleep(0.25)
+
     rec_df = recommend_perfumes(df.copy(), weak, strong, pref_tags, dislike_tags, brand_filter_mode)
     if rec_df.empty or len(rec_df) < 3:
         loading.empty()
@@ -712,19 +804,26 @@ if submit:
         st.stop()
     top3 = rec_df.head(3).copy()
 
-    # 4) AI 풀이 (여기가 진짜 대기 시간이 발생하는 구간)
-    loading.markdown("<h3 style='text-align:center; color:#2a5298; margin: 40px 0;'>✍️ 사쥬 마스터가 처방전을 쓰는 중...<br><span style='font-size:14px; color:#666;'>(약 5~10초 소요)</span></h3>", unsafe_allow_html=True)
-    
+    # 4) AI 처방전 작성 (불확정 진행 바 + '진행 중' 느낌)
+    render_loading(current_step=4, title="AI 수석 조향사가 처방전을 쓰는 중이에요…", percent=90, ai_mode=True)
+    time.sleep(0.1)  # ✅ 화면 먼저 그려지게 하는 작은 트릭
+
     reading_result = generate_comprehensive_reading(user_name.strip(), gender, saju_name, strong, weak, top3, know_time)
 
-    # 5) 로딩 종료 및 화면 지우기
+    # 완료 느낌(잠깐 95% 찍고 종료)
+    render_loading(current_step=4, title="마무리 정리 중이에요…", percent=95, ai_mode=False)
+    time.sleep(0.15)
+
+    # 로딩 종료
     loading.empty()
 
+    # 로그 저장
     try:
         save_recommendation_log(session_id, user_name.strip(), gender, birth_date, know_time, saju_name, strong, weak, top3)
     except Exception:
         pass
 
+    # 세션 저장
     st.session_state.update({
         "top3": top3,
         "saju_name": saju_name,
