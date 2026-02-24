@@ -247,7 +247,7 @@ def _pick_lucky_color_place(weak_element: str):
     return mapping.get(weak_element, {"colors": ["오프화이트", "그레이"], "places": ["조용한 카페", "산책로"]})
 
 def build_ai_reading_prompt_html(user_name, gender, saju_name, strongest, weakest, top3_df, know_time):
-    """✅ AI가 'HTML만' 출력하도록 강제하는 프롬프트"""
+    """✅ 사주 풀이를 '전문적이고 길게' (향수 파트는 유지)"""
     strong_ko = ELEMENTS_KO.get(strongest, strongest)
     weak_ko = ELEMENTS_KO.get(weakest, weakest)
     gender_tone = get_gender_tone(gender)["style"]
@@ -265,8 +265,8 @@ def build_ai_reading_prompt_html(user_name, gender, saju_name, strongest, weakes
     )
 
     prompt = f"""
-너는 '명리학 + 조향'을 초등학생도 이해할 정도로 쉽게 풀어주는 전문가야.
-아래 고객 정보를 바탕으로, 결과를 **오직 HTML로만** 작성해줘.
+너는 '명리학 + 조향'을 연결해 설명하는 전문가야.
+결과는 **오직 HTML로만** 작성해. 마크다운(###, **, -) 절대 금지. 코드블록 ``` 절대 금지.
 
 [고객]
 - 이름: {user_name}
@@ -281,50 +281,62 @@ def build_ai_reading_prompt_html(user_name, gender, saju_name, strongest, weakes
 2) {safe_text(p2.get("Brand",""))} - {safe_text(p2.get("Name",""))} / Notes: {safe_text(p2.get("Notes","정보 없음"))}
 3) {safe_text(p3.get("Brand",""))} - {safe_text(p3.get("Name",""))} / Notes: {safe_text(p3.get("Notes","정보 없음"))}
 
+[길이/톤 규칙]
+- 전체는 “부담스럽게 길지 않지만, 성의 있게 길다” 느낌.
+- 특히 **사주 파트는 전문적인 느낌으로 더 길게** 써라 (사용자가 ‘제대로 분석 받았다’고 느끼게).
+- 대신 어려운 용어는 쓰지 말고, 쓰더라도 반드시 바로 쉬운 말로 풀어 설명해라.
+
 [핵심 요구사항]
-1) 맨 위에 ‘한 단어 정의’ + ‘한 줄 비유’를 크게 강조해줘.
-   - 한 단어는 **딱 한 단어**만 (예: "물결", "등불", "숲", "칼날", "흙길" 같은 느낌)
-   - 한 줄 비유는 예: “당신은 바다로 향하는 물줄기입니다.” 같은 문장 1개
-   - 반드시 아래 HTML 구조로:
-     <h2 style="color:#1e3c72; text-align:center; font-size:1.55rem; padding: 10px 0; margin: 6px 0 10px 0;">...</h2>
-     <div style="text-align:center; font-size:0.95rem; color:#555; margin-bottom: 14px;">...</div>
+1) 맨 위 ‘한 단어 정의 + 한 줄 비유’를 크게 강조:
+   <h2 style="color:#1e3c72; text-align:center; font-size:1.55rem; padding: 10px 0; margin: 6px 0 10px 0;">...</h2>
+   <div style="text-align:center; font-size:0.95rem; color:#555; margin-bottom: 14px;">...</div>
 
-2) '당신에게 꼭 필요한 기운' 다음에 아래 3개 섹션을 넣어줘:
-   - 💰 재물운(돈 흐름)
-   - 💕 연애운(매력/관계)
-   - 🤝 인간관계(사람 흐름)
-   각각 2~3문장, 너무 단정적으로 “100% 된다” 금지. “도움이 된다/좋아질 수 있다” 톤.
+2) **사주/오행 설명을 길게 확장** (여기서 전문성 체감이 나야 함):
+   - “강한 기운의 장점” 3~4문장
+   - “강한 기운이 과해질 때의 단점/주의점” 2~3문장
+   - “부족 기운이 부족할 때 나타나는 신호(컨디션/감정/관계/습관)” 3~4문장
+   - “부족 기운을 채우면 어떤 밸런스가 잡히는지” 3~4문장
+   - “이 사람이 잘 되는 환경(일/관계 스타일)” 2~3문장
+   - 전부 초등학생도 이해할 말로, 하지만 전문가처럼 ‘구조적으로’ 정리해라.
 
-3) ‘맞춤 향수 처방전 Top3’는 각각:
+3) '당신에게 꼭 필요한 기운' 다음에 3개 섹션:
+   - 💰 재물운(돈 흐름): 3~4문장 (관리/선택/기회 관점)
+   - 💕 연애운(매력/관계): 3~4문장 (무드/첫인상/대화 관점)
+   - 🤝 인간관계(사람 흐름): 3~4문장 (협업/소통/거리감 관점)
+   단정 금지(100% 된다 금지). “도움이 될 수 있다/좋아질 수 있다” 톤.
+
+4) 향수 처방전 Top3는 지금 구조 유지:
    - 한줄 이미지(감성 1문장)
-   - 향기 노트(그대로 출력)
-   - 왜 {weak_ko} 기운을 채우나(쉽게 2문장)
-   - 기대 효과(일상 변화 2문장)
-   형태로 정리해줘.
+   - 향기 노트(그대로)
+   - 왜 {weak_ko} 기운을 채우나(쉽게 2~3문장)
+   - 기대 효과(일상 변화 2~3문장)
 
-4) 마지막에 ‘깨알 재미 요소’로
-   - 나와 잘 맞는 색깔 2가지(구체 색 이름)
-   - 나와 잘 맞는 장소 2곳(구체 장소)
-   를 넣어줘.
+5) 마지막에 깨알 재미:
+   - 색 2개(구체)
+   - 장소 2곳(구체)
 
-5) 결과는 **HTML만** 출력. 마크다운(###, **, -) 절대 사용 금지. 코드블록 ``` 절대 사용 금지.
-
-[반드시 따라야 할 HTML 출력 템플릿]
+[HTML 출력 템플릿 - 반드시 이 구조로]
 <h2 style="color:#1e3c72; text-align:center; font-size:1.55rem; padding: 10px 0; margin: 6px 0 10px 0;">(한 단어 정의 + 한 줄 비유)</h2>
 <div style="text-align:center; font-size:0.95rem; color:#555; margin-bottom: 14px;">강한 기운: ( ) / 보완 기운: ( )</div>
 <div style="font-size:0.85rem; color:#666; margin-bottom: 10px;">(시간 모름이면 정오 기준 안내 1줄)</div>
 
 <h3 style="margin:14px 0 8px 0;">📜 사주 및 오행 분석</h3>
-<div style="color:#333; line-height:1.6;">(3~4문장)</div>
+<div style="color:#333; line-height:1.7;">
+  <div style="margin-bottom:10px;"><b>1) 강한 기운의 장점</b><br>(3~4문장)</div>
+  <div style="margin-bottom:10px;"><b>2) 강한 기운이 과할 때 주의점</b><br>(2~3문장)</div>
+  <div style="margin-bottom:10px;"><b>3) 부족 기운이 부족할 때 나타나는 신호</b><br>(3~4문장)</div>
+  <div style="margin-bottom:10px;"><b>4) 부족 기운을 채우면 생기는 균형</b><br>(3~4문장)</div>
+  <div style="margin-bottom:10px;"><b>5) 잘 풀리는 환경/관계 스타일</b><br>(2~3문장)</div>
+</div>
 
 <h3 style="margin:14px 0 8px 0;">🔑 당신에게 꼭 필요한 기운</h3>
-<div style="color:#333; line-height:1.6;">(왜 {weak_ko}가 필요한지 2~3문장)</div>
+<div style="color:#333; line-height:1.7;">(왜 {weak_ko}가 필요한지 3~4문장)</div>
 
 <h3 style="margin:14px 0 8px 0;">💖 향기로 운을 틔웠을 때의 변화</h3>
-<ul style="line-height:1.65; color:#333;">
-  <li><b>💰 재물운:</b> (2~3문장)</li>
-  <li><b>💕 연애운:</b> (2~3문장)</li>
-  <li><b>🤝 인간관계:</b> (2~3문장)</li>
+<ul style="line-height:1.75; color:#333;">
+  <li><b>💰 재물운:</b> (3~4문장)</li>
+  <li><b>💕 연애운:</b> (3~4문장)</li>
+  <li><b>🤝 인간관계:</b> (3~4문장)</li>
 </ul>
 <div style="font-size:0.9rem; color:#2a5298; margin: 6px 0 12px 0;"><b>이 부족한 {weak_ko} 기운은, 아래 향수들을 통해 일상에서 자연스럽게 보완할 수 있어요.</b></div>
 
@@ -340,13 +352,13 @@ def build_ai_reading_prompt_html(user_name, gender, saju_name, strongest, weakes
   <div style="margin-top:6px;"><b>기대 효과:</b> ...</div>
 </div>
 
-(🥈 2위 카드)
-(🥉 3위 카드)
+(🥈 2위 카드도 동일 구조)
+(🥉 3위 카드도 동일 구조)
 
 <hr style="border:none; border-top:1px solid #eee; margin: 12px 0;">
 
 <h3 style="margin:14px 0 8px 0;">🍀 깨알 재미 요소</h3>
-<ul style="line-height:1.65; color:#333;">
+<ul style="line-height:1.75; color:#333;">
   <li><b>🎨 나와 잘 맞는 색깔:</b> (2개)</li>
   <li><b>📍 나와 잘 맞는 장소:</b> (2곳)</li>
 </ul>
