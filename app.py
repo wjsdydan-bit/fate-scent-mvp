@@ -801,7 +801,7 @@ if submit:
     top3 = rec_df.head(3).copy()
 
     # 4) AI 처방전 작성 (불확정 진행 바 + '진행 중' 느낌)
-    render_loading(current_step=4, title="AI 수석 조향사가 처방전을 쓰는 중이에요…", percent=90, ai_mode=True)
+    render_loading(current_step=4, title="사쥬 마스터가 처방전을 쓰는 중이에요…", percent=90, ai_mode=True)
     time.sleep(0.1)  # 화면 먼저 그려지게 하는 작은 트릭
 
     reading_result = generate_comprehensive_reading(user_name.strip(), gender, saju_name, strong, weak, top3, know_time)
