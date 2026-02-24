@@ -990,6 +990,7 @@ if "top3" in st.session_state:
             {qr_block}
         </div>
         """
+        # 🚨 수정 포인트 1: unsafe_allow_html=True를 꼭 넣어야 영수증이 그림으로 보임!
         st.markdown(receipt_html, unsafe_allow_html=True)
 
         st.markdown("---")
@@ -999,13 +1000,12 @@ if "top3" in st.session_state:
         short_text = f"""나 방금 ‘향수 사쥬!!!’ 했는데…\n🥇 {best_brand} - {best_name}\n이거 나한테 꼭 필요하대… 사쥬!!! 🥺💳💖\n👉 {app_link}"""
         long_text = f"""나 사주 봤는데, 내 운을 틔워줄 운명의 향수가 나왔어! 🥺✨\n\n[내 처방전 1순위]\n🥇 {best_brand} - {best_name}\n\n내 사주에 부족한 {ELEMENTS_KO[weak]} 기운을 채워주는 향이래.\n나 이거 사주면 진짜 평생 잘할게… 사쥬!!! 💳💖\n\n👉 너도 테스트 해봐!\n{app_link}"""
 
-        c1, c2 = st.columns(2)
-        with c1:
-            st.markdown("**짧게(센스버전)**")
-            st.code(short_text, language="text")
-        with c2:
-            st.markdown("**길게(진지버전)**")
-            st.code(long_text, language="text")
+        # 🚨 수정 포인트 2: c1, c2 컬럼을 없애고 시원하게 위아래로 배치!
+        st.markdown("#### 🔽 짧게(센스버전)")
+        st.code(short_text, language="text")
+        
+        st.markdown("#### 🔽 길게(진지버전)")
+        st.code(long_text, language="text")
 
         st.markdown("---")
         st.markdown("### 📝 서비스 개선에 참여하기")
