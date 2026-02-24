@@ -208,104 +208,270 @@ def get_real_saju_elements(year, month, day, hour=None, minute=None):
     return saju_name, counts, sorted_e[0][0], sorted_e[-1][0], gapja_str
 
 # =========================================================
-# 4) AI 풀이 생성 (Fallback 포함)
+# 4) AI 풀이 생성 (Fallback 포함) - ✅완성형(HTML 안정 렌더링)
 # =========================================================
-def generate_local_fallback_reading(user_name, gender, saju_name, strongest, weakest, top3_df, know_time):
+
+def _strip_code_fences(text: str) -> str:
+    """AI가 ``` 같은 코드블록을 섞어도 UI가 안 깨지게 제거"""
+    if not text:
+        return ""
+    t = str(text)
+    t = t.replace("```html", "").replace("```", "")
+    return t.strip()
+
+def _pick_lucky_color_place(weak_element: str):
+    """부족 오행 기반으로 색/장소를 '구체적으로' 추천 (fallback에서도 재밌게)"""
+    # 너무 점술처럼 단정하지 않고, ‘무드/이미지’ 관점으로 연결
+    mapping = {
+        "Wood": {
+            "colors": ["올리브 그린", "세이지 그린"],
+            "places": ["숲길 산책로", "식물 많은 카페(플랜테리어)"]
+        },
+        "Fire": {
+            "colors": ["코랄 레드", "선셋 오렌지"],
+            "places": ["노을 보이는 강변", "따뜻한 조명 바/라운지"]
+        },
+        "Earth": {
+            "colors": ["샌드 베이지", "토프 브라운"],
+            "places": ["도자기 공방/전시", "우드톤 북카페"]
+        },
+        "Metal": {
+            "colors": ["실버 그레이", "오프화이트"],
+            "places": ["미술관/갤러리", "정돈된 호텔 로비 라운지"]
+        },
+        "Water": {
+            "colors": ["딥 네이비", "아쿠아 블루"],
+            "places": ["바다/호수 산책", "비 오는 날 창가 자리 카페"]
+        },
+    }
+    return mapping.get(weak_element, {"colors": ["오프화이트", "그레이"], "places": ["조용한 카페", "산책로"]})
+
+def build_ai_reading_prompt_html(user_name, gender, saju_name, strongest, weakest, top3_df, know_time):
+    """✅ AI가 'HTML만' 출력하도록 강제하는 프롬프트"""
     strong_ko = ELEMENTS_KO.get(strongest, strongest)
     weak_ko = ELEMENTS_KO.get(weakest, weakest)
-    p1 = top3_df.iloc[0]
-    
-    time_notice = "\n\n> ⏰ **태어난 시간을 모른다고 선택하셔서, 연월일 6글자 기준으로 풀이했어요.**" if know_time else ""
+    gender_tone = get_gender_tone(gender)["style"]
 
-    return f"""
-### ✨ {user_name}님의 고유한 기운
-**{saju_name}** 기준으로 보면, 현재 가장 강한 기운은 **{strong_ko}**, 보완이 필요한 기운은 **{weak_ko}**입니다.
+    # top3 안정 장치
+    p = top3_df.head(3).copy()
+    p1 = p.iloc[0]
+    p2 = p.iloc[1] if len(p) > 1 else p1
+    p3 = p.iloc[2] if len(p) > 2 else p1
 
-### 📜 사주 및 오행 분석
-강한 기운이 분명한 타입이라 개성과 분위기가 뚜렷하게 드러나는 편이에요. 반대로 부족한 기운이 채워지면 일상 컨디션, 감정 균형, 대인관계에서 더 부드러운 흐름을 만들 수 있습니다.
+    time_notice = (
+        "사용자는 태어난 시간을 모름으로 선택했음. 반드시 '정오 기준 + 오차 가능' 안내를 1줄로 넣어라."
+        if know_time else
+        "사용자는 태어난 시간을 입력했음."
+    )
 
-### 🔑 당신에게 꼭 필요한 기운
-지금은 **{weak_ko}** 기운을 향으로 보완하는 것이 핵심이에요.
-> 이 부족한 **{weak_ko}** 기운은, 아래 향수들의 노트를 통해 일상에서 자연스럽게 보완할 수 있습니다.{time_notice}
+    prompt = f"""
+너는 '명리학 + 조향'을 초등학생도 이해할 정도로 쉽게 풀어주는 전문가야.
+아래 고객 정보를 바탕으로, 결과를 **오직 HTML로만** 작성해줘.
 
----
-### 🧴 맞춤 향수 처방전 (Top 3)
-#### 🥇 1위. {p1['Brand']} - {p1['Name']}
-- **추천 포인트:** 부족한 **{weak_ko}** 기운과 연결되는 노트가 잘 살아 있어요.
-- **향기 노트:** {safe_text(p1.get('Notes', '정보 없음'))}
+[고객]
+- 이름: {user_name}
+- 성별: {gender} (문체: {gender_tone})
+- 사주 표기: {saju_name}
+- 가장 강한 기운: {strong_ko}
+- 보완이 필요한 기운: {weak_ko}
+- 조건: {time_notice}
+
+[추천 향수 Top3]
+1) {safe_text(p1.get("Brand",""))} - {safe_text(p1.get("Name",""))} / Notes: {safe_text(p1.get("Notes","정보 없음"))}
+2) {safe_text(p2.get("Brand",""))} - {safe_text(p2.get("Name",""))} / Notes: {safe_text(p2.get("Notes","정보 없음"))}
+3) {safe_text(p3.get("Brand",""))} - {safe_text(p3.get("Name",""))} / Notes: {safe_text(p3.get("Notes","정보 없음"))}
+
+[핵심 요구사항]
+1) 맨 위에 ‘한 단어 정의’ + ‘한 줄 비유’를 크게 강조해줘.
+   - 한 단어는 **딱 한 단어**만 (예: "물결", "등불", "숲", "칼날", "흙길" 같은 느낌)
+   - 한 줄 비유는 예: “당신은 바다로 향하는 물줄기입니다.” 같은 문장 1개
+   - 반드시 아래 HTML 구조로:
+     <h2 style="color:#1e3c72; text-align:center; font-size:1.55rem; padding: 10px 0; margin: 6px 0 10px 0;">...</h2>
+     <div style="text-align:center; font-size:0.95rem; color:#555; margin-bottom: 14px;">...</div>
+
+2) '당신에게 꼭 필요한 기운' 다음에 아래 3개 섹션을 넣어줘:
+   - 💰 재물운(돈 흐름)
+   - 💕 연애운(매력/관계)
+   - 🤝 인간관계(사람 흐름)
+   각각 2~3문장, 너무 단정적으로 “100% 된다” 금지. “도움이 된다/좋아질 수 있다” 톤.
+
+3) ‘맞춤 향수 처방전 Top3’는 각각:
+   - 한줄 이미지(감성 1문장)
+   - 향기 노트(그대로 출력)
+   - 왜 {weak_ko} 기운을 채우나(쉽게 2문장)
+   - 기대 효과(일상 변화 2문장)
+   형태로 정리해줘.
+
+4) 마지막에 ‘깨알 재미 요소’로
+   - 나와 잘 맞는 색깔 2가지(구체 색 이름)
+   - 나와 잘 맞는 장소 2곳(구체 장소)
+   를 넣어줘.
+
+5) 결과는 **HTML만** 출력. 마크다운(###, **, -) 절대 사용 금지. 코드블록 ``` 절대 사용 금지.
+
+[반드시 따라야 할 HTML 출력 템플릿]
+<h2 style="color:#1e3c72; text-align:center; font-size:1.55rem; padding: 10px 0; margin: 6px 0 10px 0;">(한 단어 정의 + 한 줄 비유)</h2>
+<div style="text-align:center; font-size:0.95rem; color:#555; margin-bottom: 14px;">강한 기운: ( ) / 보완 기운: ( )</div>
+<div style="font-size:0.85rem; color:#666; margin-bottom: 10px;">(시간 모름이면 정오 기준 안내 1줄)</div>
+
+<h3 style="margin:14px 0 8px 0;">📜 사주 및 오행 분석</h3>
+<div style="color:#333; line-height:1.6;">(3~4문장)</div>
+
+<h3 style="margin:14px 0 8px 0;">🔑 당신에게 꼭 필요한 기운</h3>
+<div style="color:#333; line-height:1.6;">(왜 {weak_ko}가 필요한지 2~3문장)</div>
+
+<h3 style="margin:14px 0 8px 0;">💖 향기로 운을 틔웠을 때의 변화</h3>
+<ul style="line-height:1.65; color:#333;">
+  <li><b>💰 재물운:</b> (2~3문장)</li>
+  <li><b>💕 연애운:</b> (2~3문장)</li>
+  <li><b>🤝 인간관계:</b> (2~3문장)</li>
+</ul>
+<div style="font-size:0.9rem; color:#2a5298; margin: 6px 0 12px 0;"><b>이 부족한 {weak_ko} 기운은, 아래 향수들을 통해 일상에서 자연스럽게 보완할 수 있어요.</b></div>
+
+<hr style="border:none; border-top:1px solid #eee; margin: 12px 0;">
+
+<h3 style="margin:14px 0 8px 0;">🧴 맞춤 향수 처방전 (Top 3)</h3>
+
+<div style="border:1px solid #eee; border-radius:12px; padding:12px; margin-bottom:10px;">
+  <div style="font-weight:800;">🥇 1위. (브랜드 - 향수명)</div>
+  <div style="margin-top:6px;"><b>한줄 이미지:</b> ...</div>
+  <div style="margin-top:6px;"><b>향기 노트:</b> ...</div>
+  <div style="margin-top:6px;"><b>왜 {weak_ko} 기운을 채우나:</b> ...</div>
+  <div style="margin-top:6px;"><b>기대 효과:</b> ...</div>
+</div>
+
+(🥈 2위 카드)
+(🥉 3위 카드)
+
+<hr style="border:none; border-top:1px solid #eee; margin: 12px 0;">
+
+<h3 style="margin:14px 0 8px 0;">🍀 깨알 재미 요소</h3>
+<ul style="line-height:1.65; color:#333;">
+  <li><b>🎨 나와 잘 맞는 색깔:</b> (2개)</li>
+  <li><b>📍 나와 잘 맞는 장소:</b> (2곳)</li>
+</ul>
 """
+    return prompt.strip()
+
+def generate_local_fallback_reading(user_name, gender, saju_name, strongest, weakest, top3_df, know_time):
+    """✅ AI가 없을 때도 'Top3 + 운/색/장소'까지 동일한 구조로 출력"""
+    strong_ko = ELEMENTS_KO.get(strongest, strongest)
+    weak_ko = ELEMENTS_KO.get(weakest, weakest)
+
+    # top3 안정 장치
+    p = top3_df.head(3).copy()
+    if len(p) == 0:
+        return "<div>추천 결과가 부족해요. 조건을 조금 완화해 주세요.</div>"
+
+    lucky = _pick_lucky_color_place(weakest)
+    colors = lucky["colors"]
+    places = lucky["places"]
+
+    time_notice_html = (
+        '<div style="font-size:0.85rem; color:#666; margin-bottom: 10px;">'
+        '⏰ 태어난 시간을 모른다고 선택하셔서, <b>정오 기준(오차 가능)</b>으로 연/월/일 6글자 중심 풀이예요.'
+        '</div>'
+        if know_time else
+        '<div style="font-size:0.85rem; color:#666; margin-bottom: 10px;">'
+        '⏰ 태어난 시간까지 반영해서 8글자 기준으로 풀이했어요.'
+        '</div>'
+    )
+
+    # 한 단어/한 줄 비유(간단하지만 강하게)
+    one_word_map = {
+        "Wood": ("숲", "당신은 바람에도 다시 자라는 숲의 사람입니다."),
+        "Fire": ("등불", "당신은 주변을 밝히는 따뜻한 등불입니다."),
+        "Earth": ("흙길", "당신은 흔들림 없이 중심을 잡아주는 흙길입니다."),
+        "Metal": ("칼날", "당신은 군더더기 없이 선명한 칼날의 사람입니다."),
+        "Water": ("물결", "당신은 바다로 향하는 깊은 물결입니다."),
+    }
+    one_word, one_line = one_word_map.get(strongest, ("기운", "당신은 고유한 흐름을 가진 사람입니다."))
+
+    # Top3 카드 만들기
+    cards_html = ""
+    medals = ["🥇", "🥈", "🥉"]
+    for i, (_, r) in enumerate(p.iterrows()):
+        b = safe_text(r.get("Brand", ""))
+        n = safe_text(r.get("Name", ""))
+        notes = safe_text(r.get("Notes", "정보 없음"))
+
+        cards_html += f"""
+        <div style="border:1px solid #eee; border-radius:12px; padding:12px; margin-bottom:10px;">
+          <div style="font-weight:800;">{medals[i]} {i+1}위. {b} - {n}</div>
+          <div style="margin-top:6px;"><b>한줄 이미지:</b> {weak_ko} 기운을 부드럽게 채워주는 ‘무드 보정’ 향이에요.</div>
+          <div style="margin-top:6px;"><b>향기 노트:</b> {notes}</div>
+          <div style="margin-top:6px;"><b>왜 {weak_ko} 기운을 채우나:</b> 이 향의 핵심 노트가 {weak_ko}의 이미지(무드/컨디션)에 닿아 있어요. 그래서 부족한 흐름을 일상에서 자연스럽게 보완해줘요.</div>
+          <div style="margin-top:6px;"><b>기대 효과:</b> 기분이 정돈되고, 첫인상이 더 안정적으로 느껴질 수 있어요. ‘나답게 말하고 행동하는 힘’이 살아날 수 있어요.</div>
+        </div>
+        """
+
+    html = f"""
+<h2 style="color:#1e3c72; text-align:center; font-size:1.55rem; padding: 10px 0; margin: 6px 0 10px 0;">{one_word} — “{one_line}”</h2>
+<div style="text-align:center; font-size:0.95rem; color:#555; margin-bottom: 14px;">강한 기운: {strong_ko} / 보완 기운: {weak_ko}</div>
+{time_notice_html}
+
+<h3 style="margin:14px 0 8px 0;">📜 사주 및 오행 분석</h3>
+<div style="color:#333; line-height:1.6;">
+강한 기운이 분명해서 개성과 분위기가 또렷하게 드러나는 편이에요.
+부족한 기운이 채워지면 컨디션과 감정 균형이 더 안정적으로 잡히고, 사람 관계도 부드러워질 수 있어요.
+</div>
+
+<h3 style="margin:14px 0 8px 0;">🔑 당신에게 꼭 필요한 기운</h3>
+<div style="color:#333; line-height:1.6;">
+지금은 <b>{weak_ko}</b> 기운을 향으로 보완하는 게 핵심이에요.
+‘부족한 무드’를 향으로 채우면, 말투/표정/선택이 더 자연스럽게 정리될 수 있어요.
+</div>
+
+<h3 style="margin:14px 0 8px 0;">💖 향기로 운을 틔웠을 때의 변화</h3>
+<ul style="line-height:1.65; color:#333;">
+  <li><b>💰 재물운:</b> 지출이 정리되고 선택이 또렷해지면서, 돈의 흐름이 ‘샐 틈 없이’ 관리되기 쉬워져요. 작은 기회도 놓치지 않을 가능성이 커져요.</li>
+  <li><b>💕 연애운:</b> 분위기가 더 매끄럽게 정돈돼서 첫인상이 좋아질 수 있어요. ‘내가 편한 사람’으로 느껴지면 관계가 빨리 좋아질 수 있어요.</li>
+  <li><b>🤝 인간관계:</b> 말이 부드럽게 이어지고 거리감 조절이 쉬워질 수 있어요. 결과적으로 귀인(도와주는 사람)이 붙는 흐름에 도움돼요.</li>
+</ul>
+<div style="font-size:0.9rem; color:#2a5298; margin: 6px 0 12px 0;"><b>이 부족한 {weak_ko} 기운은, 아래 향수들을 통해 일상에서 자연스럽게 보완할 수 있어요.</b></div>
+
+<hr style="border:none; border-top:1px solid #eee; margin: 12px 0;">
+
+<h3 style="margin:14px 0 8px 0;">🧴 맞춤 향수 처방전 (Top 3)</h3>
+{cards_html}
+
+<hr style="border:none; border-top:1px solid #eee; margin: 12px 0;">
+
+<h3 style="margin:14px 0 8px 0;">🍀 깨알 재미 요소</h3>
+<ul style="line-height:1.65; color:#333;">
+  <li><b>🎨 나와 잘 맞는 색깔:</b> {colors[0]}, {colors[1]}</li>
+  <li><b>📍 나와 잘 맞는 장소:</b> {places[0]}, {places[1]}</li>
+</ul>
+"""
+    return html.strip()
 
 def generate_comprehensive_reading(user_name, gender, saju_name, strongest, weakest, top3_df, know_time):
+    """✅ AI 사용 가능하면 AI, 아니면 fallback / 출력은 무조건 HTML"""
     if not HAS_AI or client is None:
         return generate_local_fallback_reading(user_name, gender, saju_name, strongest, weakest, top3_df, know_time)
 
-    strong_ko = ELEMENTS_KO.get(strongest, strongest)
-    weak_ko = ELEMENTS_KO.get(weakest, weakest)
-    p1, p2, p3 = top3_df.iloc[0], top3_df.iloc[1], top3_df.iloc[2]
-    gender_tone = get_gender_tone(gender)["style"]
-    time_notice = "사용자는 태어난 시간을 모름으로 선택해 6글자(삼주)로 분석함. 반드시 안내 문구를 짧게 넣어라." if know_time else "사용자는 태어난 시간을 정확히 입력함."
+    prompt = build_ai_reading_prompt_html(user_name, gender, saju_name, strongest, weakest, top3_df, know_time)
 
-    prompt = f"""
-당신은 트렌디한 명리학자이자 조향사입니다.
-고객 이름: {user_name} (성별: {gender}, 문체: {gender_tone})
-고객 사주: [{saju_name}]
-가장 강한 기운: [{strong_ko}] / 보완이 필요한 기운: [{weak_ko}]
-추가 조건: {time_notice}
-
-추천 향수 Top 3:
-1위: {p1['Brand']} - {p1['Name']} (노트: {safe_text(p1.get('Notes',''))})
-2위: {p2['Brand']} - {p2['Name']} (노트: {safe_text(p2.get('Notes',''))})
-3위: {p3['Brand']} - {p3['Name']} (노트: {safe_text(p3.get('Notes',''))})
-
-규칙:
-- 한국어로 자연스럽고 다정하게 작성
-- 각 향수마다 "이 향수의 노트가 동양학적으로 어떻게 {weak_ko} 기운과 상통하는지", "어떤 기대효과가 있는지" 상세히 작성.
-
-형식 (마크다운 완벽 준수):
-### ✨ [당신의 고유한 기운]
-(사주를 비유한 감성적인 한 줄)
-
-### 📜 사주 및 오행 분석
-(사주 풀이 3~4문장)
-
-### 🔑 당신에게 꼭 필요한 기운
-(왜 {weak_ko} 기운이 필요한지, 보완되면 어떤 점이 좋아지는지)
-> "이 부족한 {weak_ko} 기운은, 아래 향수들을 통해 일상에서 완벽하게 보완할 수 있습니다."
-
----
-### 🧴 맞춤 향수 처방전
-
-#### 🥇 1위. {p1['Brand']} - {p1['Name']}
-- **한줄 설명:** (향수 한줄 요약)
-- **향기 노트:** {safe_text(p1.get('Notes',''))}
-- **오행의 기운:** (향과 오행의 연결)
-- **기대 효과:** (운세 상승 효과)
-
-#### 🥈 2위. {p2['Brand']} - {p2['Name']}
-- **한줄 설명:** ...
-- **향기 노트:** {safe_text(p2.get('Notes',''))}
-- **오행의 기운:** ...
-- **기대 효과:** ...
-
-#### 🥉 3위. {p3['Brand']} - {p3['Name']}
-- **한줄 설명:** ...
-- **향기 노트:** {safe_text(p3.get('Notes',''))}
-- **오행의 기운:** ...
-- **기대 효과:** ...
-"""
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "당신은 향수와 명리학을 연결해 설명하는 친절한 전문가입니다."},
+                {"role": "system", "content": "너는 사용자가 이해하기 쉽게 풀어주는 '명리학+조향' 전문가야. 결과는 반드시 HTML만 출력해."},
                 {"role": "user", "content": prompt}
             ],
-            temperature=0.7
+            temperature=0.75
         )
-        return response.choices[0].message.content or generate_local_fallback_reading(user_name, gender, saju_name, strongest, weakest, top3_df, know_time)
+        out = response.choices[0].message.content if response and response.choices else ""
+        out = _strip_code_fences(out)
+
+        # AI가 형식을 깨면 fallback으로 안전하게
+        if "<h2" not in out or "<h3" not in out:
+            return generate_local_fallback_reading(user_name, gender, saju_name, strongest, weakest, top3_df, know_time)
+
+        return out
+
     except Exception:
         return generate_local_fallback_reading(user_name, gender, saju_name, strongest, weakest, top3_df, know_time)
-
 # =========================================================
 # 5) 로그 저장
 # =========================================================
