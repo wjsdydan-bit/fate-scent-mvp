@@ -676,7 +676,7 @@ with st.form("saju_form"):
 
 
 # =========================================================
-# 8) 분석 및 결과 (🚀 진짜 실행 시간과 동기화된 로딩 UI 적용)
+# 8) 분석 및 결과 (🚀 진짜 실행 시간과 동기화된 '가운데 글씨 변경' 로딩)
 # =========================================================
 if submit:
     if not user_name.strip():
@@ -687,31 +687,33 @@ if submit:
     calc_hour = None if know_time else b_hour
     calc_min = None if know_time else b_min
 
-    # ✨ st.status를 활용한 '리얼타임 로딩 애니메이션'
-    with st.status("🔮 운명을 바꾸는 향수 처방 중...", expanded=True) as status:
-        st.write("🌿 만세력 스캐닝 및 오행 에너지 분석 중...")
-        result = get_real_saju_elements(birth_date.year, birth_date.month, birth_date.day, calc_hour, calc_min)
-        if result[0] is None:
-            status.update(label="❌ 사주 계산 실패", state="error")
-            st.error("사주 계산에 실패했습니다.")
-            st.stop()
-        
-        saju_name, e_counts, strong, weak, gapja_str = result
+    # 1) 로딩 글씨를 띄울 '빈 도화지'를 화면 중앙에 준비
+    loading = st.empty()
 
-        st.write("✨ 최적의 향수 데이터베이스 매칭 중...")
-        rec_df = recommend_perfumes(df.copy(), weak, strong, pref_tags, dislike_tags, brand_filter_mode)
-        if rec_df.empty or len(rec_df) < 3:
-            status.update(label="❌ 향수 매칭 실패", state="error")
-            st.error("조건에 맞는 향수가 부족해요. 필터를 줄여주세요.")
-            st.stop()
-            
-        top3 = rec_df.head(3).copy()
+    # 2) 첫 번째 일: 만세력 계산 시작
+    loading.markdown("<h3 style='text-align:center; color:#2a5298; margin: 28px 0;'>🔮 만세력 스캐닝 중...</h3>", unsafe_allow_html=True)
+    result = get_real_saju_elements(birth_date.year, birth_date.month, birth_date.day, calc_hour, calc_min)
+    if result[0] is None:
+        loading.empty() # 에러 나면 로딩 지우기
+        st.error("사주 계산에 실패했습니다.")
+        st.stop()
+    saju_name, e_counts, strong, weak, gapja_str = result
 
-        st.write("✍️ 사쥬 마스터가 맞춤 처방전을 작성 중입니다... (약 5~10초 소요)")
-        reading_result = generate_comprehensive_reading(user_name.strip(), gender, saju_name, strong, weak, top3, know_time)
-        
-        # 모든 작업이 끝나면 완료 메시지로 바뀜
-        status.update(label="✅ 처방전 작성이 완료되었습니다!", state="complete", expanded=False)
+    # 3) 두 번째 일: 향수 매칭 시작
+    loading.markdown("<h3 style='text-align:center; color:#2a5298; margin: 28px 0;'>🌿 오행 기반 향수 매칭 중...</h3>", unsafe_allow_html=True)
+    rec_df = recommend_perfumes(df.copy(), weak, strong, pref_tags, dislike_tags, brand_filter_mode)
+    if rec_df.empty or len(rec_df) < 3:
+        loading.empty()
+        st.error("조건에 맞는 향수가 부족해요. 필터를 줄여주세요.")
+        st.stop()
+    top3 = rec_df.head(3).copy()
+
+    # 4) 세 번째 일: 제일 오래 걸리는 AI 풀이 시작
+    loading.markdown("<h3 style='text-align:center; color:#2a5298; margin: 28px 0;'>✍️ 사쥬 마스터가 처방전을 쓰는 중... (약 5~10초)</h3>", unsafe_allow_html=True)
+    reading_result = generate_comprehensive_reading(user_name.strip(), gender, saju_name, strong, weak, top3, know_time)
+
+    # 5) 모든 일이 끝나면 로딩 글씨 싹 지우기! (그리고 결과 화면이 짠!)
+    loading.empty()
 
     try:
         save_recommendation_log(session_id, user_name.strip(), gender, birth_date, know_time, saju_name, strong, weak, top3)
@@ -719,10 +721,16 @@ if submit:
         pass
 
     st.session_state.update({
-        "top3": top3, "saju_name": saju_name, "e_counts": e_counts,
-        "strong": strong, "weak": weak, "gender": gender,
-        "know_time": know_time, "session_id": session_id,
-        "user_name": user_name.strip(), "reading_result": reading_result
+        "top3": top3,
+        "saju_name": saju_name,
+        "e_counts": e_counts,
+        "strong": strong,
+        "weak": weak,
+        "gender": gender,
+        "know_time": know_time,
+        "session_id": session_id,
+        "user_name": user_name.strip(),
+        "reading_result": reading_result
     })
 
 # =========================================================
