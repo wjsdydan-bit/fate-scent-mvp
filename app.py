@@ -834,7 +834,7 @@ if submit:
     })
 
 # =========================================================
-# ✅ 결과 렌더링 (탭 + 히어로 카드 + 요약에 한글/동양학 설명)
+# ✅ 결과 렌더링 (탭 + 히어로 카드 + 바이럴 공유)
 # =========================================================
 if "top3" in st.session_state:
     top3 = st.session_state["top3"]
@@ -860,6 +860,7 @@ if "top3" in st.session_state:
 
     time_line = "⏰ 태어난 시간이 입력되었습니다." if not know_time else "⏰ 시간 미입력: 정오 기준(오차 가능)으로 분석했어요."
     survey_url = f"{SURVEY_BASE_URL}{urllib.parse.quote(session_id)}"
+    app_link = "https://your-perfume-saju-link.streamlit.app" # 🚨 네 실제 앱 링크로 나중에 바꿔줘!
 
     st.markdown(f"""
     <div class="hero">
@@ -877,14 +878,15 @@ if "top3" in st.session_state:
         </div>
       </div>
       <div class="small-note" style="margin-top:10px;">
-        원하는 것만 빠르게 볼 수 있게 <b>탭</b>으로 나눴어요. (요약 → 상세풀이 → 향수 → 시향/설문)
+        원하는 것만 빠르게 볼 수 있게 <b>탭</b>으로 나눴어요.
       </div>
     </div>
     """, unsafe_allow_html=True)
 
-    tab1, tab2, tab3, tab4 = st.tabs(["✨ 요약", "📜 사주풀이(자세히)", "🧴 향수 Top3", "🥺 사쥬!!!"])
+    # 🚨 여기서 탭을 4개로 정확하게 선언!
+    tab1, tab2, tab3, tab4 = st.tabs(["✨ 요약", "📜 사주풀이(자세히)", "🧴 향수 Top3", "🥺 사쥬!!!(공유)"])
 
-    # --- 요약 탭(한글 노트 + 동양학 짧은 이유)
+    # --- 1) 요약 탭 ---
     with tab1:
         st.markdown('<div class="section-card">', unsafe_allow_html=True)
         st.markdown(f"**핵심 요약**: 지금은 **{ELEMENTS_KO[weak]}** 기운을 채우는 향이 가장 잘 맞아요.")
@@ -896,40 +898,33 @@ if "top3" in st.session_state:
             b_name, p_name = safe_text(row.get("Brand")), safe_text(row.get("Name"))
             notes_raw = safe_text(row.get("Notes", ""))
             notes_ko = notes_to_korean_summary(notes_raw)
-
             matched = extract_matching_notes(row, weak, top_n=3)
             reason = build_east_asian_note_reason(weak, matched)
-
             badges = " ".join([f"<span class='badge'>{x}</span>" for x in get_element_vector_badges(row)])
 
             st.markdown(f"""
             <div class="section-card">
               <div style="font-weight:800;">{['🥇','🥈','🥉'][i]} {b_name} - {p_name}</div>
               <div style="margin-top:6px;">{badges}</div>
-
-              <div class="small-muted" style="margin-top:8px;"><b>향 느낌(한글 요약):</b> {_html.escape(notes_ko)}</div>
-              <div class="small-muted" style="margin-top:6px;"><b>왜 {ELEMENTS_KO[weak]}를 채우나:</b> {reason}</div>
+              <div class="small-muted" style="margin-top:8px;"><b>향 느낌:</b> {_html.escape(notes_ko)}</div>
+              <div class="small-muted" style="margin-top:6px;"><b>이유:</b> {reason}</div>
             </div>
             """, unsafe_allow_html=True)
 
         st.markdown("#### 🚀 다음 액션")
-        c1, c2 = st.columns(2)
-        with c1:
-            row0 = top3.iloc[0]
-            b0, n0 = safe_text(row0.get("Brand")), safe_text(row0.get("Name"))
-            naver0 = f"https://search.shopping.naver.com/search/all?query={urllib.parse.quote(f'{b0} {n0} 향수')}"
-            st.link_button("🥇 1위 시향 검색", naver0, use_container_width=True)
-        with c2:
-            st.link_button("📝 1분 설문 참여", survey_url, use_container_width=True)
+        row0 = top3.iloc[0]
+        b0, n0 = safe_text(row0.get("Brand")), safe_text(row0.get("Name"))
+        naver0 = f"https://search.shopping.naver.com/search/all?query={urllib.parse.quote(f'{b0} {n0} 향수')}"
+        st.link_button("🥇 1위 향수 시향 검색하기", naver0, use_container_width=True)
 
-    # --- 상세 탭(히어로 중복 방지로 h2 제거)
+    # --- 2) 상세 사주풀이 탭 ---
     with tab2:
         st.markdown('<div class="section-card">', unsafe_allow_html=True)
         reading_body = re.sub(r"<h2[^>]*>.*?</h2>", "", reading_result, flags=re.S | re.I)
         st.markdown(reading_body, unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # --- 향수 Top3 탭(시향 버튼)
+    # --- 3) 향수 Top 3 탭 ---
     with tab3:
         st.markdown("### 🛍️ 추천 향수 시향해보기")
         for i, (_, row) in enumerate(top3.iterrows()):
@@ -938,138 +933,84 @@ if "top3" in st.session_state:
             st.link_button(f"{['🥇','🥈','🥉'][i]} {b_name} - {p_name} 검색하기", naver_url, use_container_width=True)
         st.info("Tip) 가장 끌리는 1개만 먼저 시향해도 충분해요. ‘첫인상’이 맞는지 체크해보세요!")
 
-   # --- 🥺 사달라고 조르기 (바이럴 공유 탭) ---
-with tab4:
-    st.markdown("### 📸 인스타 스토리에 박제하기 (사쥬!!!)")
-    st.info("아래 ‘운명 향수 청구서’를 캡처해서 인스타 스토리에 올리고, 친구/애인 태그해서 **사쥬!!!** 해보세요 💳💖")
+    # --- 4) 🥺 사달라고 조르기 (바이럴 공유 & 설문) 탭 ---
+    with tab4:
+        st.markdown("### 📸 인스타 스토리에 박제하기 (사쥬!!!)")
+        st.info("아래 ‘운명 향수 청구서’를 캡처해서 인스타 스토리에 올리고, 친구/애인 태그해서 **사쥬!!!** 해보세요 💳💖")
 
-    # 1등 향수 정보
-    row0 = top3.iloc[0]
-    best_brand = safe_text(row0.get("Brand"))
-    best_name = safe_text(row0.get("Name"))
+        row0 = top3.iloc[0]
+        best_brand = safe_text(row0.get("Brand"))
+        best_name = safe_text(row0.get("Name"))
 
-    # 히어로 문장(이미 세션에 저장된 hero_text가 없다면, reading_result에서 뽑아오기)
-    hero_text = ""
-    try:
-        m = re.search(r"<h2[^>]*>(.*?)</h2>", st.session_state.get("reading_result",""), flags=re.S | re.I)
-        if m:
-            hero_text = re.sub(r"<[^>]+>", "", m.group(1)).strip()
-    except Exception:
-        pass
-    if not hero_text:
-        hero_text = f"사쥬!!! — “나 지금 {ELEMENTS_KO[weak]} 기운이 필요해”"
-
-    # ✅ 앱 링크(너 배포 링크 넣기)
-    app_link = "https://your-perfume-saju-link.streamlit.app"
-
-    # ✅ QR 코드(있으면 생성, 없으면 패스)
-    qr_img_b64 = ""
-    try:
-        import qrcode
-        from io import BytesIO
-        import base64
-
-        qr = qrcode.QRCode(box_size=6, border=1)
-        qr.add_data(app_link)
-        qr.make(fit=True)
-        img = qr.make_image(fill_color="black", back_color="white")
-
-        buf = BytesIO()
-        img.save(buf, format="PNG")
-        qr_img_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
-    except Exception:
+        # QR 코드 생성 (에러 방지 처리 완벽)
         qr_img_b64 = ""
+        try:
+            import qrcode
+            from io import BytesIO
+            import base64
+            qr = qrcode.QRCode(box_size=6, border=1)
+            qr.add_data(app_link)
+            qr.make(fit=True)
+            img = qr.make_image(fill_color="black", back_color="white")
+            buf = BytesIO()
+            img.save(buf, format="PNG")
+            qr_img_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+        except Exception:
+            qr_img_b64 = ""
 
-    # 캡처 팁(초등학생 버전)
-    st.markdown(
-        "<div class='small-muted'>"
-        "📌 <b>캡처 팁</b> · PC(윈도우): <b>Win + Shift + S</b> · 맥: <b>Cmd + Shift + 4</b> · 모바일: <b>전원+볼륨</b>"
-        "</div>",
-        unsafe_allow_html=True
-    )
+        st.markdown("<div class='small-muted'>📌 <b>캡처 팁</b> · 모바일: <b>전원+볼륨</b> · PC: <b>Win+Shift+S / Cmd+Shift+4</b></div>", unsafe_allow_html=True)
 
-    # 영수증 UI(스토리/캡처 최적화)
-    qr_block = ""
-    if qr_img_b64:
-        qr_block = f"""
-        <div style="margin-top:12px; display:flex; justify-content:center;">
-          <div style="background:#fff; border:1px solid #eee; border-radius:12px; padding:10px;">
-            <div style="font-size:12px; color:#666; margin-bottom:6px; text-align:center;">📲 나도 해보기</div>
-            <img src="data:image/png;base64,{qr_img_b64}" style="width:120px; height:120px;">
-          </div>
+        qr_block = ""
+        if qr_img_b64:
+            qr_block = f"""
+            <div style="margin-top:12px; display:flex; justify-content:center;">
+              <div style="background:#fff; border:1px solid #eee; border-radius:12px; padding:10px;">
+                <div style="font-size:12px; color:#666; margin-bottom:6px; text-align:center;">📲 나도 해보기</div>
+                <img src="data:image/png;base64,{qr_img_b64}" style="width:120px; height:120px;">
+              </div>
+            </div>
+            """
+
+        receipt_html = f"""
+        <div style="background-color:#fff; border:2px dashed #d1d8e0; border-radius:16px; padding:22px; text-align:center; max-width:340px; margin: 12px auto 18px auto; box-shadow: 0 6px 18px rgba(0,0,0,0.06);">
+            <div style="font-size:24px; margin-bottom:6px;">🧾</div>
+            <div style="font-size:11px; letter-spacing:1px; color:#999; margin-bottom:6px;">FATE SCENT / 향수 사쥬!!!</div>
+            <div style="font-size:16px; font-weight:900; color:#1e3c72; margin: 6px 0 10px 0;">운명 향수 청구서</div>
+            <div style="font-size:13px; color:#666; margin-bottom:10px; line-height:1.45;"><b>{hero_text}</b></div>
+            <div style="font-size:13px; color:#7f8c8d; margin-bottom:4px;">청구 대상: <span style="border-bottom:1px solid #7f8c8d; padding-bottom:2px;">나를 사랑하는 사람</span> 🥺</div>
+            <hr style="border-top:1px dashed #d1d8e0; margin:14px 0;">
+            <div style="font-size:12px; color:#e74c3c; font-weight:800; margin-bottom:6px;">🔥 처방 1순위</div>
+            <div style="font-size:18px; font-weight:900; color:#1e3c72; margin-bottom:4px;">{best_brand}</div>
+            <div style="font-size:14px; font-weight:800; color:#34495e; margin-bottom:12px;">{best_name}</div>
+            <div style="font-size:13px; color:#555; background:#f8f9fa; padding:10px; border-radius:10px; line-height:1.55;">
+                <b>사유:</b> 내 사주에 부족한 <b>{ELEMENTS_KO[weak]}</b> 기운 보충을 위해 긴급히 필요함.<br>
+                <span style="color:#2a5298; font-weight:800;">사달라고 조르는 중… 사쥬!!! 💳💖</span>
+            </div>
+            <div style="margin-top:10px; font-size:12px; color:#888;">결제 기한: 내 마음이 바뀌기 전까지</div>
+            {qr_block}
         </div>
         """
+        st.markdown(receipt_html, unsafe_allow_html=True)
 
-    receipt_html = f"""
-    <div style="background-color:#fff; border:2px dashed #d1d8e0; border-radius:16px; padding:22px; text-align:center;
-                max-width:340px; margin: 12px auto 18px auto; box-shadow: 0 6px 18px rgba(0,0,0,0.06);">
-        <div style="font-size:24px; margin-bottom:6px;">🧾</div>
-        <div style="font-size:11px; letter-spacing:1px; color:#999; margin-bottom:6px;">FATE SCENT / 향수 사쥬!!!</div>
+        st.markdown("---")
+        st.markdown("### 💬 카톡으로 대놓고 링크 보내기")
+        st.write("오른쪽 위 **복사 버튼(📋)** 눌러서 카톡방에 바로 붙여넣기 하면 끝!")
 
-        <div style="font-size:16px; font-weight:900; color:#1e3c72; margin: 6px 0 10px 0;">
-          운명 향수 청구서
-        </div>
+        short_text = f"""나 방금 ‘향수 사쥬!!!’ 했는데…\n🥇 {best_brand} - {best_name}\n이거 나한테 꼭 필요하대… 사쥬!!! 🥺💳💖\n👉 {app_link}"""
+        long_text = f"""나 사주 봤는데, 내 운을 틔워줄 운명의 향수가 나왔어! 🥺✨\n\n[내 처방전 1순위]\n🥇 {best_brand} - {best_name}\n\n내 사주에 부족한 {ELEMENTS_KO[weak]} 기운을 채워주는 향이래.\n나 이거 사주면 진짜 평생 잘할게… 사쥬!!! 💳💖\n\n👉 너도 테스트 해봐!\n{app_link}"""
 
-        <div style="font-size:13px; color:#666; margin-bottom:10px; line-height:1.45;">
-          <b>{hero_text}</b>
-        </div>
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown("**짧게(센스버전)**")
+            st.code(short_text, language="text")
+        with c2:
+            st.markdown("**길게(진지버전)**")
+            st.code(long_text, language="text")
 
-        <div style="font-size:13px; color:#7f8c8d; margin-bottom:4px;">
-          청구 대상: <span style="border-bottom:1px solid #7f8c8d; padding-bottom:2px;">나를 사랑하는 사람</span> 🥺
-        </div>
-
-        <hr style="border-top:1px dashed #d1d8e0; margin:14px 0;">
-
-        <div style="font-size:12px; color:#e74c3c; font-weight:800; margin-bottom:6px;">🔥 처방 1순위</div>
-        <div style="font-size:18px; font-weight:900; color:#1e3c72; margin-bottom:4px;">{best_brand}</div>
-        <div style="font-size:14px; font-weight:800; color:#34495e; margin-bottom:12px;">{best_name}</div>
-
-        <div style="font-size:13px; color:#555; background:#f8f9fa; padding:10px; border-radius:10px; line-height:1.55;">
-          <b>사유:</b> 내 사주에 부족한 <b>{ELEMENTS_KO[weak]}</b> 기운 보충을 위해 긴급히 필요함.<br>
-          <span style="color:#2a5298; font-weight:800;">사달라고 조르는 중… 사쥬!!! 💳💖</span>
-        </div>
-
-        <div style="margin-top:10px; font-size:12px; color:#888;">
-          결제 기한: 내 마음이 바뀌기 전까지
-        </div>
-
-        {qr_block}
-    </div>
-    """
-    st.markdown(receipt_html, unsafe_allow_html=True)
-
-    st.markdown("---")
-
-    # 카톡 공유: 짧은 버전 / 긴 버전
-    st.markdown("### 💬 카톡으로 대놓고 링크 보내기")
-    st.write("오른쪽 위 **복사 버튼(📋)** 눌러서 카톡방에 바로 붙여넣기 하면 끝!")
-
-    short_text = f"""나 방금 ‘향수 사쥬!!!’ 했는데…
-🥇 {best_brand} - {best_name}
-이거 나한테 꼭 필요하대… 사쥬!!! 🥺💳💖
-👉 {app_link}"""
-
-    long_text = f"""나 사주 봤는데, 내 운을 틔워줄 향수가 나왔어! 🥺✨
-
-[내 처방전 1순위]
-🥇 {best_brand} - {best_name}
-
-내 사주에 부족한 {ELEMENTS_KO[weak]} 기운을 채워주는 향이래.
-나 이거 사주면 진짜 평생 잘할게… 사쥬!!! 💳💖
-
-👉 너도 테스트 해봐!
-{app_link}"""
-
-    c1, c2 = st.columns(2)
-    with c1:
-        st.markdown("**짧게(센스버전)**")
-        st.code(short_text, language="text")
-    with c2:
-        st.markdown("**길게(진지버전)**")
-        st.code(long_text, language="text")
-
-    st.caption("Tip) 인스타 스토리에는 영수증 캡처 + QR 넣고, 카톡은 짧은 버전이 전환이 잘 나와요.")
-
+        st.markdown("---")
+        st.markdown("### 📝 서비스 개선에 참여하기")
+        st.info("결과가 맘에 드셨다면 1분 설문 부탁드려요! 여러분의 피드백이 다음 업데이트에 바로 반영됩니다.")
+        st.link_button("📝 1분 설문 참여하기 (세션ID 자동입력)", survey_url, use_container_width=True)
 # =========================================================
 # 9) 관리자용 로그 (하단 숨김)
 # =========================================================
