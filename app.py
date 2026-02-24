@@ -89,7 +89,7 @@ LOG_PATH = os.path.join(base_dir, "recommendation_logs.csv")
 CLICK_LOG_PATH = os.path.join(base_dir, "recommendation_click_logs.csv")
 
 # ✅ 여기에 네 구글폼 링크 넣기
-SURVEY_BASE_URL = "https://forms.gle/여기에_구글폼_링크"
+SURVEY_BASE_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfLuBSOMDSbph7vY3qfOeW-1yvFvKVnGIsWjkMBRZ8w-SdE5w/viewform?usp=pp_url&entry.1954804504="
 
 ELEMENTS = ["Wood", "Fire", "Earth", "Metal", "Water"]
 ELEMENTS_KO = {
