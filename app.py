@@ -21,7 +21,7 @@ except Exception:
 # =========================================================
 # 0) 기본 설정 및 모바일 앱 스타일
 # =========================================================
-st.set_page_config(page_title="이 향수 사쥬!!", page_icon="🔮", layout="centered")
+st.set_page_config(page_title="이 향수 사쥬!!", page_icon="🥺", layout="centered")
 
 st.markdown("""
 <style>
@@ -641,8 +641,8 @@ def recommend_perfumes(df, weakest, strongest, pref_tags, dislike_tags, brand_fi
 # =========================================================
 # 7) 메인 화면 UI
 # =========================================================
-st.markdown("<h1>🔮 이 향수 사쥬!!</h1>", unsafe_allow_html=True)
-st.markdown('<div class="subtitle">실제 만세력 기반으로 사주 오행을 분석하고<br>부족한 기운을 보완해줄 맞춤 향수를 처방해드려요.</div>', unsafe_allow_html=True)
+st.markdown("<h1>🥺 이 향수 사쥬!!</h1>", unsafe_allow_html=True)
+st.markdown('<div class="subtitle">내 사주 오행에 딱 맞는 운명적인 향수,<br>나 이거 사주면 안돼? (당당)</div>', unsafe_allow_html=True)
 
 if df.empty:
     st.error("향수 데이터베이스를 불러오지 못했습니다.")
