@@ -501,7 +501,7 @@ def generate_comprehensive_reading(user_name, gender, saju_name, strongest, weak
         out = _strip_code_fences(out)
 
         # ✅ 형식 깨짐 방지: 핵심 태그가 없으면 fallback
-        if "<h2" not in out or "<h3" not in out or "Top 3" not in out:
+        if "<h2" not in out or "<h3" not in out or "위." not in out:
             return generate_local_fallback_reading(user_name, gender, saju_name, strongest, weakest, top3_df, know_time)
 
         return out
@@ -677,7 +677,7 @@ if "top3" in st.session_state:
         st.link_button(f"{['🥇','🥈','🥉'][i]} {b_name} - {p_name} 검색하기", naver_url, use_container_width=True)
 
     st.markdown("---")
-    survey_url = f"{SURVEY_BASE_URL}?session_id={urllib.parse.quote(st.session_state['session_id'])}"
+    survey_url = f"{SURVEY_BASE_URL}{urllib.parse.quote(st.session_state['session_id'])}"
     st.info("🙋 추천 결과가 어떠셨나요? 1분 설문에 참여해주시면 더 좋은 서비스를 만들 수 있어요!")
     st.link_button("📝 1분 설문 참여하기", survey_url, use_container_width=True)
 
