@@ -208,7 +208,7 @@ def get_real_saju_elements(year, month, day, hour=None, minute=None):
     return saju_name, counts, sorted_e[0][0], sorted_e[-1][0], gapja_str
 
 # =========================================================
-# 4) AI 풀이 생성 (Fallback 포함) - ✅완성형(HTML 안정 렌더링)
+# 4) AI 풀이 생성 (Fallback 포함) - ✅사주 파트 강화 완성형
 # =========================================================
 
 def _strip_code_fences(text: str) -> str:
@@ -221,33 +221,21 @@ def _strip_code_fences(text: str) -> str:
 
 def _pick_lucky_color_place(weak_element: str):
     """부족 오행 기반으로 색/장소를 '구체적으로' 추천 (fallback에서도 재밌게)"""
-    # 너무 점술처럼 단정하지 않고, ‘무드/이미지’ 관점으로 연결
     mapping = {
-        "Wood": {
-            "colors": ["올리브 그린", "세이지 그린"],
-            "places": ["숲길 산책로", "식물 많은 카페(플랜테리어)"]
-        },
-        "Fire": {
-            "colors": ["코랄 레드", "선셋 오렌지"],
-            "places": ["노을 보이는 강변", "따뜻한 조명 바/라운지"]
-        },
-        "Earth": {
-            "colors": ["샌드 베이지", "토프 브라운"],
-            "places": ["도자기 공방/전시", "우드톤 북카페"]
-        },
-        "Metal": {
-            "colors": ["실버 그레이", "오프화이트"],
-            "places": ["미술관/갤러리", "정돈된 호텔 로비 라운지"]
-        },
-        "Water": {
-            "colors": ["딥 네이비", "아쿠아 블루"],
-            "places": ["바다/호수 산책", "비 오는 날 창가 자리 카페"]
-        },
+        "Wood": {"colors": ["올리브 그린", "세이지 그린"], "places": ["숲길 산책로", "식물 많은 카페(플랜테리어)"]},
+        "Fire": {"colors": ["코랄 레드", "선셋 오렌지"], "places": ["노을 보이는 강변", "따뜻한 조명 바/라운지"]},
+        "Earth": {"colors": ["샌드 베이지", "토프 브라운"], "places": ["도자기 공방/전시", "우드톤 북카페"]},
+        "Metal": {"colors": ["실버 그레이", "오프화이트"], "places": ["미술관/갤러리", "정돈된 호텔 로비 라운지"]},
+        "Water": {"colors": ["딥 네이비", "아쿠아 블루"], "places": ["바다/호수 산책", "비 오는 날 창가 자리 카페"]},
     }
     return mapping.get(weak_element, {"colors": ["오프화이트", "그레이"], "places": ["조용한 카페", "산책로"]})
 
 def build_ai_reading_prompt_html(user_name, gender, saju_name, strongest, weakest, top3_df, know_time):
-    """✅ 사주 풀이를 '전문적이고 길게' (향수 파트는 유지)"""
+    """
+    ✅ 사주 풀이를 길고 전문적으로(구체 예시/체크리스트/루틴 포함)
+    ✅ 향수 파트는 기존 구조 유지
+    ✅ 결과는 HTML만 출력하도록 강제
+    """
     strong_ko = ELEMENTS_KO.get(strongest, strongest)
     weak_ko = ELEMENTS_KO.get(weakest, weakest)
     gender_tone = get_gender_tone(gender)["style"]
@@ -264,6 +252,7 @@ def build_ai_reading_prompt_html(user_name, gender, saju_name, strongest, weakes
         "사용자는 태어난 시간을 입력했음."
     )
 
+    # ✅ 여기부터가 “사주 파트 길게”의 핵심: 구체 예시/체크리스트/루틴 강제
     prompt = f"""
 너는 '명리학 + 조향'을 연결해 설명하는 전문가야.
 결과는 **오직 HTML로만** 작성해. 마크다운(###, **, -) 절대 금지. 코드블록 ``` 절대 금지.
@@ -281,64 +270,62 @@ def build_ai_reading_prompt_html(user_name, gender, saju_name, strongest, weakes
 2) {safe_text(p2.get("Brand",""))} - {safe_text(p2.get("Name",""))} / Notes: {safe_text(p2.get("Notes","정보 없음"))}
 3) {safe_text(p3.get("Brand",""))} - {safe_text(p3.get("Name",""))} / Notes: {safe_text(p3.get("Notes","정보 없음"))}
 
-[길이/톤 규칙]
-- 전체는 “부담스럽게 길지 않지만, 성의 있게 길다” 느낌.
-- 특히 **사주 파트는 전문적인 느낌으로 더 길게** 써라 (사용자가 ‘제대로 분석 받았다’고 느끼게).
-- 대신 어려운 용어는 쓰지 말고, 쓰더라도 반드시 바로 쉬운 말로 풀어 설명해라.
+[작성 규칙]
+- 초등학생도 이해할 말로 쓰되, 구조는 “전문가처럼 체계적으로”.
+- 사주 파트는 충분히 길게(사용자가 ‘제대로 분석 받았다’ 느낌).
+- 각 큰 섹션에는 최소 1개 “현실 예시(상황)”를 포함해라.
+- 점술처럼 단정하지 말고 “~할 수 있어요 / 도움이 될 수 있어요” 톤 유지.
+- 결과는 반드시 아래 HTML 템플릿의 구조를 지켜라.
 
-[핵심 요구사항]
-1) 맨 위 ‘한 단어 정의 + 한 줄 비유’를 크게 강조:
-   <h2 style="color:#1e3c72; text-align:center; font-size:1.55rem; padding: 10px 0; margin: 6px 0 10px 0;">...</h2>
-   <div style="text-align:center; font-size:0.95rem; color:#555; margin-bottom: 14px;">...</div>
-
-2) **사주/오행 설명을 길게 확장** (여기서 전문성 체감이 나야 함):
-   - “강한 기운의 장점” 3~4문장
-   - “강한 기운이 과해질 때의 단점/주의점” 2~3문장
-   - “부족 기운이 부족할 때 나타나는 신호(컨디션/감정/관계/습관)” 3~4문장
-   - “부족 기운을 채우면 어떤 밸런스가 잡히는지” 3~4문장
-   - “이 사람이 잘 되는 환경(일/관계 스타일)” 2~3문장
-   - 전부 초등학생도 이해할 말로, 하지만 전문가처럼 ‘구조적으로’ 정리해라.
-
-3) '당신에게 꼭 필요한 기운' 다음에 3개 섹션:
-   - 💰 재물운(돈 흐름): 3~4문장 (관리/선택/기회 관점)
-   - 💕 연애운(매력/관계): 3~4문장 (무드/첫인상/대화 관점)
-   - 🤝 인간관계(사람 흐름): 3~4문장 (협업/소통/거리감 관점)
-   단정 금지(100% 된다 금지). “도움이 될 수 있다/좋아질 수 있다” 톤.
-
-4) 향수 처방전 Top3는 지금 구조 유지:
-   - 한줄 이미지(감성 1문장)
-   - 향기 노트(그대로)
-   - 왜 {weak_ko} 기운을 채우나(쉽게 2~3문장)
-   - 기대 효과(일상 변화 2~3문장)
-
-5) 마지막에 깨알 재미:
-   - 색 2개(구체)
-   - 장소 2곳(구체)
+[반드시 포함해야 하는 요소]
+1) 맨 위: 한 단어 정의(딱 한 단어) + 한 줄 비유(1문장) + 강/보완 기운 표기
+2) 사주 분석(길게): 장점/주의점/부족 신호/보완 후 균형/잘 되는 환경(각 문단)
+3) “지금 상태 체크리스트(3개)” 섹션 추가: 사용자가 고개 끄덕일 만한 문장형 체크 3개
+4) “{weak_ko} 보완 루틴(향 말고 행동) 3개” 섹션 추가: 오늘부터 할 수 있는 행동 3개
+5) 운(재물/연애/인간관계)은 각 3~4문장으로, “기운→행동→결과” 흐름으로
+6) 향수 처방 Top3는 기존 구조 유지(한줄 이미지/노트/왜 채우나/기대 효과)
+7) 마지막에 색 2개 + 장소 2곳
 
 [HTML 출력 템플릿 - 반드시 이 구조로]
-<h2 style="color:#1e3c72; text-align:center; font-size:1.55rem; padding: 10px 0; margin: 6px 0 10px 0;">(한 단어 정의 + 한 줄 비유)</h2>
-<div style="text-align:center; font-size:0.95rem; color:#555; margin-bottom: 14px;">강한 기운: ( ) / 보완 기운: ( )</div>
-<div style="font-size:0.85rem; color:#666; margin-bottom: 10px;">(시간 모름이면 정오 기준 안내 1줄)</div>
+<h2 style="color:#1e3c72; text-align:center; font-size:1.6rem; padding: 10px 0; margin: 6px 0 10px 0;">
+(한 단어) — “(한 줄 비유 1문장)”
+</h2>
+<div style="text-align:center; font-size:0.95rem; color:#555; margin-bottom: 12px;">강한 기운: {strong_ko} / 보완 기운: {weak_ko}</div>
+<div style="font-size:0.85rem; color:#666; margin-bottom: 12px;">(시간 모름이면 정오 기준 안내 1줄, 아니면 8글자 반영 안내 1줄)</div>
 
 <h3 style="margin:14px 0 8px 0;">📜 사주 및 오행 분석</h3>
-<div style="color:#333; line-height:1.7;">
-  <div style="margin-bottom:10px;"><b>1) 강한 기운의 장점</b><br>(3~4문장)</div>
-  <div style="margin-bottom:10px;"><b>2) 강한 기운이 과할 때 주의점</b><br>(2~3문장)</div>
-  <div style="margin-bottom:10px;"><b>3) 부족 기운이 부족할 때 나타나는 신호</b><br>(3~4문장)</div>
-  <div style="margin-bottom:10px;"><b>4) 부족 기운을 채우면 생기는 균형</b><br>(3~4문장)</div>
-  <div style="margin-bottom:10px;"><b>5) 잘 풀리는 환경/관계 스타일</b><br>(2~3문장)</div>
+<div style="color:#333; line-height:1.75;">
+  <div style="margin-bottom:12px;"><b>1) 강한 기운의 장점</b><br>(3~4문장 + 현실 예시 1개)</div>
+  <div style="margin-bottom:12px;"><b>2) 강한 기운이 과할 때 주의점</b><br>(3문장 + 트리거→반응→결과 예시 1개)</div>
+  <div style="margin-bottom:12px;"><b>3) 부족 기운이 부족할 때 나타나는 신호</b><br>(3~4문장 + 생활 신호 예시 1개)</div>
+  <div style="margin-bottom:12px;"><b>4) 부족 기운을 채우면 생기는 균형</b><br>(3~4문장 + 바뀌는 장면 예시 1개)</div>
+  <div style="margin-bottom:12px;"><b>5) 잘 풀리는 환경/관계 스타일</b><br>(3문장 + 잘 맞는 일/관계 방식 1개)</div>
 </div>
 
-<h3 style="margin:14px 0 8px 0;">🔑 당신에게 꼭 필요한 기운</h3>
-<div style="color:#333; line-height:1.7;">(왜 {weak_ko}가 필요한지 3~4문장)</div>
+<h3 style="margin:14px 0 8px 0;">✅ 지금 상태 체크(해당되면 {weak_ko} 보완이 특히 도움될 수 있어요)</h3>
+<ul style="line-height:1.75; color:#333;">
+  <li>(체크 1)</li>
+  <li>(체크 2)</li>
+  <li>(체크 3)</li>
+</ul>
+
+<h3 style="margin:14px 0 8px 0;">🔑 당신에게 꼭 필요한 기운: {weak_ko}</h3>
+<div style="color:#333; line-height:1.75;">(3~4문장 + {weak_ko}를 쉬운 말로 정의(예: 정리/기준/결정/선 긋기) + 현실 예시 1개)</div>
+
+<h3 style="margin:14px 0 8px 0;">🧩 {weak_ko} 보완 루틴(향 말고 ‘행동’으로도 바로 효과 보기)</h3>
+<ol style="line-height:1.75; color:#333;">
+  <li>(아주 쉬운 행동 1)</li>
+  <li>(아주 쉬운 행동 2)</li>
+  <li>(아주 쉬운 행동 3)</li>
+</ol>
 
 <h3 style="margin:14px 0 8px 0;">💖 향기로 운을 틔웠을 때의 변화</h3>
-<ul style="line-height:1.75; color:#333;">
-  <li><b>💰 재물운:</b> (3~4문장)</li>
-  <li><b>💕 연애운:</b> (3~4문장)</li>
-  <li><b>🤝 인간관계:</b> (3~4문장)</li>
+<ul style="line-height:1.8; color:#333;">
+  <li><b>💰 재물운:</b> (3~4문장: {weak_ko}→행동 변화→돈 흐름 결과)</li>
+  <li><b>💕 연애운:</b> (3~4문장: {weak_ko}→무드/대화 변화→관계 결과)</li>
+  <li><b>🤝 인간관계:</b> (3~4문장: {weak_ko}→소통/거리감 변화→협업 결과)</li>
 </ul>
-<div style="font-size:0.9rem; color:#2a5298; margin: 6px 0 12px 0;"><b>이 부족한 {weak_ko} 기운은, 아래 향수들을 통해 일상에서 자연스럽게 보완할 수 있어요.</b></div>
+<div style="font-size:0.92rem; color:#2a5298; margin: 6px 0 12px 0;"><b>이 부족한 {weak_ko} 기운은, 아래 향수들을 통해 일상에서 자연스럽게 보완할 수 있어요.</b></div>
 
 <hr style="border:none; border-top:1px solid #eee; margin: 12px 0;">
 
@@ -346,10 +333,10 @@ def build_ai_reading_prompt_html(user_name, gender, saju_name, strongest, weakes
 
 <div style="border:1px solid #eee; border-radius:12px; padding:12px; margin-bottom:10px;">
   <div style="font-weight:800;">🥇 1위. (브랜드 - 향수명)</div>
-  <div style="margin-top:6px;"><b>한줄 이미지:</b> ...</div>
-  <div style="margin-top:6px;"><b>향기 노트:</b> ...</div>
-  <div style="margin-top:6px;"><b>왜 {weak_ko} 기운을 채우나:</b> ...</div>
-  <div style="margin-top:6px;"><b>기대 효과:</b> ...</div>
+  <div style="margin-top:6px;"><b>한줄 이미지:</b> (감성 1문장)</div>
+  <div style="margin-top:6px;"><b>향기 노트:</b> (원문 그대로)</div>
+  <div style="margin-top:6px;"><b>왜 {weak_ko} 기운을 채우나:</b> (2~3문장)</div>
+  <div style="margin-top:6px;"><b>기대 효과:</b> (2~3문장)</div>
 </div>
 
 (🥈 2위 카드도 동일 구조)
@@ -358,38 +345,35 @@ def build_ai_reading_prompt_html(user_name, gender, saju_name, strongest, weakes
 <hr style="border:none; border-top:1px solid #eee; margin: 12px 0;">
 
 <h3 style="margin:14px 0 8px 0;">🍀 깨알 재미 요소</h3>
-<ul style="line-height:1.75; color:#333;">
-  <li><b>🎨 나와 잘 맞는 색깔:</b> (2개)</li>
-  <li><b>📍 나와 잘 맞는 장소:</b> (2곳)</li>
+<ul style="line-height:1.8; color:#333;">
+  <li><b>🎨 나와 잘 맞는 색깔:</b> (구체 색 2개)</li>
+  <li><b>📍 나와 잘 맞는 장소:</b> (구체 장소 2곳)</li>
 </ul>
 """
     return prompt.strip()
 
 def generate_local_fallback_reading(user_name, gender, saju_name, strongest, weakest, top3_df, know_time):
-    """✅ AI가 없을 때도 'Top3 + 운/색/장소'까지 동일한 구조로 출력"""
+    """✅ AI가 없을 때도 사주 파트가 성의 있게 보이도록(길이/구조 유지)"""
     strong_ko = ELEMENTS_KO.get(strongest, strongest)
     weak_ko = ELEMENTS_KO.get(weakest, weakest)
 
-    # top3 안정 장치
     p = top3_df.head(3).copy()
     if len(p) == 0:
         return "<div>추천 결과가 부족해요. 조건을 조금 완화해 주세요.</div>"
 
     lucky = _pick_lucky_color_place(weakest)
-    colors = lucky["colors"]
-    places = lucky["places"]
+    colors, places = lucky["colors"], lucky["places"]
 
     time_notice_html = (
-        '<div style="font-size:0.85rem; color:#666; margin-bottom: 10px;">'
+        '<div style="font-size:0.85rem; color:#666; margin-bottom: 12px;">'
         '⏰ 태어난 시간을 모른다고 선택하셔서, <b>정오 기준(오차 가능)</b>으로 연/월/일 6글자 중심 풀이예요.'
         '</div>'
         if know_time else
-        '<div style="font-size:0.85rem; color:#666; margin-bottom: 10px;">'
+        '<div style="font-size:0.85rem; color:#666; margin-bottom: 12px;">'
         '⏰ 태어난 시간까지 반영해서 8글자 기준으로 풀이했어요.'
         '</div>'
     )
 
-    # 한 단어/한 줄 비유(간단하지만 강하게)
     one_word_map = {
         "Wood": ("숲", "당신은 바람에도 다시 자라는 숲의 사람입니다."),
         "Fire": ("등불", "당신은 주변을 밝히는 따뜻한 등불입니다."),
@@ -399,48 +383,88 @@ def generate_local_fallback_reading(user_name, gender, saju_name, strongest, wea
     }
     one_word, one_line = one_word_map.get(strongest, ("기운", "당신은 고유한 흐름을 가진 사람입니다."))
 
-    # Top3 카드 만들기
-    cards_html = ""
+    # Top3 카드
     medals = ["🥇", "🥈", "🥉"]
+    cards_html = ""
     for i, (_, r) in enumerate(p.iterrows()):
         b = safe_text(r.get("Brand", ""))
         n = safe_text(r.get("Name", ""))
         notes = safe_text(r.get("Notes", "정보 없음"))
-
         cards_html += f"""
         <div style="border:1px solid #eee; border-radius:12px; padding:12px; margin-bottom:10px;">
           <div style="font-weight:800;">{medals[i]} {i+1}위. {b} - {n}</div>
           <div style="margin-top:6px;"><b>한줄 이미지:</b> {weak_ko} 기운을 부드럽게 채워주는 ‘무드 보정’ 향이에요.</div>
           <div style="margin-top:6px;"><b>향기 노트:</b> {notes}</div>
-          <div style="margin-top:6px;"><b>왜 {weak_ko} 기운을 채우나:</b> 이 향의 핵심 노트가 {weak_ko}의 이미지(무드/컨디션)에 닿아 있어요. 그래서 부족한 흐름을 일상에서 자연스럽게 보완해줘요.</div>
-          <div style="margin-top:6px;"><b>기대 효과:</b> 기분이 정돈되고, 첫인상이 더 안정적으로 느껴질 수 있어요. ‘나답게 말하고 행동하는 힘’이 살아날 수 있어요.</div>
+          <div style="margin-top:6px;"><b>왜 {weak_ko} 기운을 채우나:</b> 이 향의 핵심 노트가 {weak_ko}의 이미지(정리/안정/균형)에 닿아 있어요. 그래서 부족한 흐름을 일상에서 자연스럽게 보완해줘요.</div>
+          <div style="margin-top:6px;"><b>기대 효과:</b> 기분이 정돈되고, 선택이 또렷해질 수 있어요. ‘나답게 말하고 행동하는 힘’이 살아날 수 있어요.</div>
         </div>
         """
 
     html = f"""
-<h2 style="color:#1e3c72; text-align:center; font-size:1.55rem; padding: 10px 0; margin: 6px 0 10px 0;">{one_word} — “{one_line}”</h2>
-<div style="text-align:center; font-size:0.95rem; color:#555; margin-bottom: 14px;">강한 기운: {strong_ko} / 보완 기운: {weak_ko}</div>
+<h2 style="color:#1e3c72; text-align:center; font-size:1.6rem; padding: 10px 0; margin: 6px 0 10px 0;">{one_word} — “{one_line}”</h2>
+<div style="text-align:center; font-size:0.95rem; color:#555; margin-bottom: 12px;">강한 기운: {strong_ko} / 보완 기운: {weak_ko}</div>
 {time_notice_html}
 
 <h3 style="margin:14px 0 8px 0;">📜 사주 및 오행 분석</h3>
-<div style="color:#333; line-height:1.6;">
-강한 기운이 분명해서 개성과 분위기가 또렷하게 드러나는 편이에요.
-부족한 기운이 채워지면 컨디션과 감정 균형이 더 안정적으로 잡히고, 사람 관계도 부드러워질 수 있어요.
+<div style="color:#333; line-height:1.75;">
+  <div style="margin-bottom:12px;"><b>1) 강한 기운의 장점</b><br>
+  강한 기운이 뚜렷하면 분위기와 선택 기준이 분명해지는 편이에요.
+  그래서 사람을 보는 감각이 빠르거나, 일의 흐름을 읽는 능력이 좋아질 수 있어요.
+  예를 들면 대화에서 “상대가 원하는 포인트”를 먼저 잡아주는 타입일 가능성이 커요.
+  </div>
+
+  <div style="margin-bottom:12px;"><b>2) 강한 기운이 과할 때 주의점</b><br>
+  다만 기운이 한쪽으로 쏠리면, 피곤할 때 판단이 흔들릴 수 있어요.
+  (트리거→반응→결과) 일정이 몰릴 때 → 생각이 많아져 결정을 미룸 → 기회를 놓치는 식으로 나타날 수 있어요.
+  </div>
+
+  <div style="margin-bottom:12px;"><b>3) 부족 기운이 부족할 때 나타나는 신호</b><br>
+  {weak_ko} 기운이 부족하면 ‘정리/기준/결정’이 늦어질 수 있어요.
+  그래서 선택지가 많아질수록 오히려 더 피곤해지거나, 말/관계의 경계가 흐려질 수 있어요.
+  예: 지출 기준이 흔들리거나, 연락/약속의 선을 정하기 어려울 때가 생길 수 있어요.
+  </div>
+
+  <div style="margin-bottom:12px;"><b>4) 부족 기운을 채우면 생기는 균형</b><br>
+  {weak_ko}가 보완되면 마음이 정돈되고 결정을 내리는 속도가 빨라질 수 있어요.
+  감정은 그대로 따뜻한데, 행동은 더 또렷해지는 느낌이에요.
+  예: “이건 하고, 이건 안 해”가 편해지면서 삶이 가벼워질 수 있어요.
+  </div>
+
+  <div style="margin-bottom:12px;"><b>5) 잘 풀리는 환경/관계 스타일</b><br>
+  당신은 안정적인 기준이 있는 환경에서 실력이 더 잘 나올 가능성이 커요.
+  관계도 ‘편하지만 흐트러지지 않는 거리감’이 유지될 때 가장 편해질 수 있어요.
+  예: 역할과 기대치가 명확한 팀/관계에서 강점을 잘 발휘해요.
+  </div>
 </div>
 
-<h3 style="margin:14px 0 8px 0;">🔑 당신에게 꼭 필요한 기운</h3>
-<div style="color:#333; line-height:1.6;">
-지금은 <b>{weak_ko}</b> 기운을 향으로 보완하는 게 핵심이에요.
-‘부족한 무드’를 향으로 채우면, 말투/표정/선택이 더 자연스럽게 정리될 수 있어요.
+<h3 style="margin:14px 0 8px 0;">✅ 지금 상태 체크(해당되면 {weak_ko} 보완이 특히 도움될 수 있어요)</h3>
+<ul style="line-height:1.75; color:#333;">
+  <li>결정해야 하는데 자꾸 미뤄지고, 머릿속이 복잡하게 느껴진다.</li>
+  <li>돈/시간/관계에서 “기준”이 흔들려서 뒤늦게 후회하는 일이 있다.</li>
+  <li>말을 부드럽게 하고 싶은데, 타이밍을 놓치거나 선 긋기가 어렵다.</li>
+</ul>
+
+<h3 style="margin:14px 0 8px 0;">🔑 당신에게 꼭 필요한 기운: {weak_ko}</h3>
+<div style="color:#333; line-height:1.75;">
+{weak_ko} 기운은 쉽게 말하면 “정리 → 기준 → 결정을 도와주는 힘”이에요.
+이 기운이 채워지면 감정은 풍부하게 유지하면서도, 행동은 더 단단해질 수 있어요.
+예: 약속을 잡을 때도 ‘내 페이스’를 지키는 선택이 쉬워지는 식이에요.
 </div>
+
+<h3 style="margin:14px 0 8px 0;">🧩 {weak_ko} 보완 루틴(향 말고 ‘행동’으로도 바로 효과 보기)</h3>
+<ol style="line-height:1.75; color:#333;">
+  <li>하루 3분: 책상/가방/휴대폰 홈화면 중 “한 군데”만 정리하기</li>
+  <li>결정 피로 줄이기: “오늘의 기준 1개”를 정하고(예: 소비/약속) 그 기준만 지키기</li>
+  <li>관계 선 긋기 연습: 거절 문장 1개를 미리 준비해두기(예: “오늘은 쉬고 내일 답할게!”)</li>
+</ol>
 
 <h3 style="margin:14px 0 8px 0;">💖 향기로 운을 틔웠을 때의 변화</h3>
-<ul style="line-height:1.65; color:#333;">
-  <li><b>💰 재물운:</b> 지출이 정리되고 선택이 또렷해지면서, 돈의 흐름이 ‘샐 틈 없이’ 관리되기 쉬워져요. 작은 기회도 놓치지 않을 가능성이 커져요.</li>
-  <li><b>💕 연애운:</b> 분위기가 더 매끄럽게 정돈돼서 첫인상이 좋아질 수 있어요. ‘내가 편한 사람’으로 느껴지면 관계가 빨리 좋아질 수 있어요.</li>
-  <li><b>🤝 인간관계:</b> 말이 부드럽게 이어지고 거리감 조절이 쉬워질 수 있어요. 결과적으로 귀인(도와주는 사람)이 붙는 흐름에 도움돼요.</li>
+<ul style="line-height:1.8; color:#333;">
+  <li><b>💰 재물운:</b> {weak_ko} 기운이 보완되면 ‘돈의 기준’이 생기기 쉬워요. 기준이 생기면 새는 돈이 줄고 선택의 질이 올라갈 수 있어요. 결과적으로 기회가 왔을 때 “잡을 준비”가 되어 있을 가능성이 커져요.</li>
+  <li><b>💕 연애운:</b> 무드가 정돈되면 첫인상이 더 안정적으로 느껴질 수 있어요. 대화에서도 “나의 선”이 생겨서, 오히려 더 매력적으로 보일 수 있어요. 편안한 관계로 이어질 확률이 높아질 수 있어요.</li>
+  <li><b>🤝 인간관계:</b> 소통에서 핵심이 또렷해지면 오해가 줄어들 수 있어요. 협업에서도 역할/기대치가 정리돼서 신뢰가 쌓이기 쉬워요. 결과적으로 도움 주는 사람(귀인)이 붙는 흐름에 도움이 될 수 있어요.</li>
 </ul>
-<div style="font-size:0.9rem; color:#2a5298; margin: 6px 0 12px 0;"><b>이 부족한 {weak_ko} 기운은, 아래 향수들을 통해 일상에서 자연스럽게 보완할 수 있어요.</b></div>
+<div style="font-size:0.92rem; color:#2a5298; margin: 6px 0 12px 0;"><b>이 부족한 {weak_ko} 기운은, 아래 향수들을 통해 일상에서 자연스럽게 보완할 수 있어요.</b></div>
 
 <hr style="border:none; border-top:1px solid #eee; margin: 12px 0;">
 
@@ -450,7 +474,7 @@ def generate_local_fallback_reading(user_name, gender, saju_name, strongest, wea
 <hr style="border:none; border-top:1px solid #eee; margin: 12px 0;">
 
 <h3 style="margin:14px 0 8px 0;">🍀 깨알 재미 요소</h3>
-<ul style="line-height:1.65; color:#333;">
+<ul style="line-height:1.8; color:#333;">
   <li><b>🎨 나와 잘 맞는 색깔:</b> {colors[0]}, {colors[1]}</li>
   <li><b>📍 나와 잘 맞는 장소:</b> {places[0]}, {places[1]}</li>
 </ul>
@@ -476,8 +500,8 @@ def generate_comprehensive_reading(user_name, gender, saju_name, strongest, weak
         out = response.choices[0].message.content if response and response.choices else ""
         out = _strip_code_fences(out)
 
-        # AI가 형식을 깨면 fallback으로 안전하게
-        if "<h2" not in out or "<h3" not in out:
+        # ✅ 형식 깨짐 방지: 핵심 태그가 없으면 fallback
+        if "<h2" not in out or "<h3" not in out or "Top 3" not in out:
             return generate_local_fallback_reading(user_name, gender, saju_name, strongest, weakest, top3_df, know_time)
 
         return out
