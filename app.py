@@ -938,17 +938,137 @@ if "top3" in st.session_state:
             st.link_button(f"{['🥇','🥈','🥉'][i]} {b_name} - {p_name} 검색하기", naver_url, use_container_width=True)
         st.info("Tip) 가장 끌리는 1개만 먼저 시향해도 충분해요. ‘첫인상’이 맞는지 체크해보세요!")
 
-    # --- 설문 탭
-    with tab4:
-        st.info("🙋 결과가 어땠나요? 1분 설문이 서비스 개선에 가장 큰 도움이 됩니다!")
-        st.link_button("📝 1분 설문 참여하기 (세션ID 자동입력)", survey_url, use_container_width=True)
+   # --- 🥺 사달라고 조르기 (바이럴 공유 탭) ---
+with tab4:
+    st.markdown("### 📸 인스타 스토리에 박제하기 (사쥬!!!)")
+    st.info("아래 ‘운명 향수 청구서’를 캡처해서 인스타 스토리에 올리고, 친구/애인 태그해서 **사쥬!!!** 해보세요 💳💖")
 
-        st.markdown("<div class='section-card'>", unsafe_allow_html=True)
-        st.markdown("**왜 설문이 중요한가요?**")
-        st.markdown("- 사주풀이 흥미도 / 추천 일치도 / 구매(시향) 의향을 KPI로 관리해요.")
-        st.markdown("- 여러분 피드백이 다음 업데이트에 바로 반영됩니다.")
-        st.markdown("</div>", unsafe_allow_html=True)
+    # 1등 향수 정보
+    row0 = top3.iloc[0]
+    best_brand = safe_text(row0.get("Brand"))
+    best_name = safe_text(row0.get("Name"))
 
+    # 히어로 문장(이미 세션에 저장된 hero_text가 없다면, reading_result에서 뽑아오기)
+    hero_text = ""
+    try:
+        m = re.search(r"<h2[^>]*>(.*?)</h2>", st.session_state.get("reading_result",""), flags=re.S | re.I)
+        if m:
+            hero_text = re.sub(r"<[^>]+>", "", m.group(1)).strip()
+    except Exception:
+        pass
+    if not hero_text:
+        hero_text = f"사쥬!!! — “나 지금 {ELEMENTS_KO[weak]} 기운이 필요해”"
+
+    # ✅ 앱 링크(너 배포 링크 넣기)
+    app_link = "https://your-perfume-saju-link.streamlit.app"
+
+    # ✅ QR 코드(있으면 생성, 없으면 패스)
+    qr_img_b64 = ""
+    try:
+        import qrcode
+        from io import BytesIO
+        import base64
+
+        qr = qrcode.QRCode(box_size=6, border=1)
+        qr.add_data(app_link)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+
+        buf = BytesIO()
+        img.save(buf, format="PNG")
+        qr_img_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+    except Exception:
+        qr_img_b64 = ""
+
+    # 캡처 팁(초등학생 버전)
+    st.markdown(
+        "<div class='small-muted'>"
+        "📌 <b>캡처 팁</b> · PC(윈도우): <b>Win + Shift + S</b> · 맥: <b>Cmd + Shift + 4</b> · 모바일: <b>전원+볼륨</b>"
+        "</div>",
+        unsafe_allow_html=True
+    )
+
+    # 영수증 UI(스토리/캡처 최적화)
+    qr_block = ""
+    if qr_img_b64:
+        qr_block = f"""
+        <div style="margin-top:12px; display:flex; justify-content:center;">
+          <div style="background:#fff; border:1px solid #eee; border-radius:12px; padding:10px;">
+            <div style="font-size:12px; color:#666; margin-bottom:6px; text-align:center;">📲 나도 해보기</div>
+            <img src="data:image/png;base64,{qr_img_b64}" style="width:120px; height:120px;">
+          </div>
+        </div>
+        """
+
+    receipt_html = f"""
+    <div style="background-color:#fff; border:2px dashed #d1d8e0; border-radius:16px; padding:22px; text-align:center;
+                max-width:340px; margin: 12px auto 18px auto; box-shadow: 0 6px 18px rgba(0,0,0,0.06);">
+        <div style="font-size:24px; margin-bottom:6px;">🧾</div>
+        <div style="font-size:11px; letter-spacing:1px; color:#999; margin-bottom:6px;">FATE SCENT / 향수 사쥬!!!</div>
+
+        <div style="font-size:16px; font-weight:900; color:#1e3c72; margin: 6px 0 10px 0;">
+          운명 향수 청구서
+        </div>
+
+        <div style="font-size:13px; color:#666; margin-bottom:10px; line-height:1.45;">
+          <b>{hero_text}</b>
+        </div>
+
+        <div style="font-size:13px; color:#7f8c8d; margin-bottom:4px;">
+          청구 대상: <span style="border-bottom:1px solid #7f8c8d; padding-bottom:2px;">나를 사랑하는 사람</span> 🥺
+        </div>
+
+        <hr style="border-top:1px dashed #d1d8e0; margin:14px 0;">
+
+        <div style="font-size:12px; color:#e74c3c; font-weight:800; margin-bottom:6px;">🔥 처방 1순위</div>
+        <div style="font-size:18px; font-weight:900; color:#1e3c72; margin-bottom:4px;">{best_brand}</div>
+        <div style="font-size:14px; font-weight:800; color:#34495e; margin-bottom:12px;">{best_name}</div>
+
+        <div style="font-size:13px; color:#555; background:#f8f9fa; padding:10px; border-radius:10px; line-height:1.55;">
+          <b>사유:</b> 내 사주에 부족한 <b>{ELEMENTS_KO[weak]}</b> 기운 보충을 위해 긴급히 필요함.<br>
+          <span style="color:#2a5298; font-weight:800;">사달라고 조르는 중… 사쥬!!! 💳💖</span>
+        </div>
+
+        <div style="margin-top:10px; font-size:12px; color:#888;">
+          결제 기한: 내 마음이 바뀌기 전까지
+        </div>
+
+        {qr_block}
+    </div>
+    """
+    st.markdown(receipt_html, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # 카톡 공유: 짧은 버전 / 긴 버전
+    st.markdown("### 💬 카톡으로 대놓고 링크 보내기")
+    st.write("오른쪽 위 **복사 버튼(📋)** 눌러서 카톡방에 바로 붙여넣기 하면 끝!")
+
+    short_text = f"""나 방금 ‘향수 사쥬!!!’ 했는데…
+🥇 {best_brand} - {best_name}
+이거 나한테 꼭 필요하대… 사쥬!!! 🥺💳💖
+👉 {app_link}"""
+
+    long_text = f"""나 사주 봤는데, 내 운을 틔워줄 향수가 나왔어! 🥺✨
+
+[내 처방전 1순위]
+🥇 {best_brand} - {best_name}
+
+내 사주에 부족한 {ELEMENTS_KO[weak]} 기운을 채워주는 향이래.
+나 이거 사주면 진짜 평생 잘할게… 사쥬!!! 💳💖
+
+👉 너도 테스트 해봐!
+{app_link}"""
+
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown("**짧게(센스버전)**")
+        st.code(short_text, language="text")
+    with c2:
+        st.markdown("**길게(진지버전)**")
+        st.code(long_text, language="text")
+
+    st.caption("Tip) 인스타 스토리에는 영수증 캡처 + QR 넣고, 카톡은 짧은 버전이 전환이 잘 나와요.")
 
 # =========================================================
 # 9) 관리자용 로그 (하단 숨김)
