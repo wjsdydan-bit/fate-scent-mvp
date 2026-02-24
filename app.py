@@ -933,7 +933,7 @@ if "top3" in st.session_state:
             st.link_button(f"{['🥇','🥈','🥉'][i]} {b_name} - {p_name} 검색하기", naver_url, use_container_width=True)
         st.info("Tip) 가장 끌리는 1개만 먼저 시향해도 충분해요. ‘첫인상’이 맞는지 체크해보세요!")
 
-    # --- 4) 🥺 사달라고 조르기 (바이럴 공유 & 설문) 탭 ---
+   # --- 4) 🥺 사달라고 조르기 (바이럴 공유 & 설문) 탭 ---
     with tab4:
         st.markdown("### 📸 인스타 스토리에 박제하기 (사쥬!!!)")
         st.info("아래 ‘운명 향수 청구서’를 캡처해서 인스타 스토리에 올리고, 친구/애인 태그해서 **사쥬!!!** 해보세요 💳💖")
@@ -942,8 +942,11 @@ if "top3" in st.session_state:
         best_brand = safe_text(row0.get("Brand"))
         best_name = safe_text(row0.get("Name"))
 
-        # QR 코드 생성 (에러 방지 처리 완벽)
+        # QR 코드 생성
         qr_img_b64 = ""
+        # 🚨 여기에 네 진짜 앱 링크 적용 완료!
+        app_link = "https://fate-scent-mvp.streamlit.app/" 
+        
         try:
             import qrcode
             from io import BytesIO
@@ -962,45 +965,38 @@ if "top3" in st.session_state:
 
         qr_block = ""
         if qr_img_b64:
-            qr_block = f"""
-            <div style="margin-top:12px; display:flex; justify-content:center;">
-              <div style="background:#fff; border:1px solid #eee; border-radius:12px; padding:10px;">
-                <div style="font-size:12px; color:#666; margin-bottom:6px; text-align:center;">📲 나도 해보기</div>
-                <img src="data:image/png;base64,{qr_img_b64}" style="width:120px; height:120px;">
-              </div>
-            </div>
-            """
+            qr_block = f'<div style="margin-top:12px; display:flex; justify-content:center;"><div style="background:#fff; border:1px solid #eee; border-radius:12px; padding:10px;"><div style="font-size:12px; color:#666; margin-bottom:6px; text-align:center;">📲 나도 해보기</div><img src="data:image/png;base64,{qr_img_b64}" style="width:120px; height:120px;"></div></div>'
 
+        # 🚨 들여쓰기 100% 제거! 왼쪽 벽에 딱 붙임!
         receipt_html = f"""
-        <div style="background-color:#fff; border:2px dashed #d1d8e0; border-radius:16px; padding:22px; text-align:center; max-width:340px; margin: 12px auto 18px auto; box-shadow: 0 6px 18px rgba(0,0,0,0.06);">
-            <div style="font-size:24px; margin-bottom:6px;">🧾</div>
-            <div style="font-size:11px; letter-spacing:1px; color:#999; margin-bottom:6px;">FATE SCENT / 향수 사쥬!!!</div>
-            <div style="font-size:16px; font-weight:900; color:#1e3c72; margin: 6px 0 10px 0;">운명 향수 청구서</div>
-            <div style="font-size:13px; color:#666; margin-bottom:10px; line-height:1.45;"><b>{hero_text}</b></div>
-            <div style="font-size:13px; color:#7f8c8d; margin-bottom:4px;">청구 대상: <span style="border-bottom:1px solid #7f8c8d; padding-bottom:2px;">나를 사랑하는 사람</span> 🥺</div>
-            <hr style="border-top:1px dashed #d1d8e0; margin:14px 0;">
-            <div style="font-size:12px; color:#e74c3c; font-weight:800; margin-bottom:6px;">🔥 처방 1순위</div>
-            <div style="font-size:18px; font-weight:900; color:#1e3c72; margin-bottom:4px;">{best_brand}</div>
-            <div style="font-size:14px; font-weight:800; color:#34495e; margin-bottom:12px;">{best_name}</div>
-            <div style="font-size:13px; color:#555; background:#f8f9fa; padding:10px; border-radius:10px; line-height:1.55;">
-                <b>사유:</b> 내 사주에 부족한 <b>{ELEMENTS_KO[weak]}</b> 기운 보충을 위해 긴급히 필요함.<br>
-                <span style="color:#2a5298; font-weight:800;">사달라고 조르는 중… 사쥬!!! 💳💖</span>
-            </div>
-            <div style="margin-top:10px; font-size:12px; color:#888;">결제 기한: 내 마음이 바뀌기 전까지</div>
-            {qr_block}
-        </div>
-        """
-        # 🚨 수정 포인트 1: unsafe_allow_html=True를 꼭 넣어야 영수증이 그림으로 보임!
+<div style="background-color:#fff; border:2px dashed #d1d8e0; border-radius:16px; padding:22px; text-align:center; max-width:340px; margin: 12px auto 18px auto; box-shadow: 0 6px 18px rgba(0,0,0,0.06);">
+<div style="font-size:24px; margin-bottom:6px;">🧾</div>
+<div style="font-size:11px; letter-spacing:1px; color:#999; margin-bottom:6px;">FATE SCENT / 향수 사쥬!!!</div>
+<div style="font-size:16px; font-weight:900; color:#1e3c72; margin: 6px 0 10px 0;">운명 향수 청구서</div>
+<div style="font-size:13px; color:#666; margin-bottom:10px; line-height:1.45;"><b>{hero_text}</b></div>
+<div style="font-size:13px; color:#7f8c8d; margin-bottom:4px;">청구 대상: <span style="border-bottom:1px solid #7f8c8d; padding-bottom:2px;">나를 사랑하는 사람</span> 🥺</div>
+<hr style="border-top:1px dashed #d1d8e0; margin:14px 0;">
+<div style="font-size:12px; color:#e74c3c; font-weight:800; margin-bottom:6px;">🔥 처방 1순위</div>
+<div style="font-size:18px; font-weight:900; color:#1e3c72; margin-bottom:4px;">{best_brand}</div>
+<div style="font-size:14px; font-weight:800; color:#34495e; margin-bottom:12px;">{best_name}</div>
+<div style="font-size:13px; color:#555; background:#f8f9fa; padding:10px; border-radius:10px; line-height:1.55;">
+<b>사유:</b> 내 사주에 부족한 <b>{ELEMENTS_KO[weak]}</b> 기운 보충을 위해 긴급히 필요함.<br>
+<span style="color:#2a5298; font-weight:800;">사달라고 조르는 중… 사쥬!!! 💳💖</span>
+</div>
+<div style="margin-top:10px; font-size:12px; color:#888;">결제 기한: 내 마음이 바뀌기 전까지</div>
+{qr_block}
+</div>
+"""
         st.markdown(receipt_html, unsafe_allow_html=True)
 
         st.markdown("---")
         st.markdown("### 💬 카톡으로 대놓고 링크 보내기")
         st.write("오른쪽 위 **복사 버튼(📋)** 눌러서 카톡방에 바로 붙여넣기 하면 끝!")
 
-        short_text = f"""나 방금 ‘향수 사쥬!!!’ 했는데…\n🥇 {best_brand} - {best_name}\n이거 나한테 꼭 필요하대… 사쥬!!! 🥺💳💖\n👉 {app_link}"""
-        long_text = f"""나 사주 봤는데, 내 운을 틔워줄 운명의 향수가 나왔어! 🥺✨\n\n[내 처방전 1순위]\n🥇 {best_brand} - {best_name}\n\n내 사주에 부족한 {ELEMENTS_KO[weak]} 기운을 채워주는 향이래.\n나 이거 사주면 진짜 평생 잘할게… 사쥬!!! 💳💖\n\n👉 너도 테스트 해봐!\n{app_link}"""
+        # 줄바꿈(\n)을 명확하게 처리해서 복사했을 때 예쁘게 나오게 함!
+        short_text = f"나 방금 ‘향수 사쥬!!!’ 했는데…\n🥇 {best_brand} - {best_name}\n이거 나한테 꼭 필요하대… 사쥬!!! 🥺💳💖\n👉 {app_link}"
+        long_text = f"나 사주 봤는데, 내 운을 틔워줄 운명의 향수가 나왔어! 🥺✨\n\n[내 처방전 1순위]\n🥇 {best_brand} - {best_name}\n\n내 사주에 부족한 {ELEMENTS_KO[weak]} 기운을 채워주는 향이래.\n나 이거 사주면 진짜 평생 잘할게… 사쥬!!! 💳💖\n\n👉 너도 테스트 해봐!\n{app_link}"
 
-        # 🚨 수정 포인트 2: c1, c2 컬럼을 없애고 시원하게 위아래로 배치!
         st.markdown("#### 🔽 짧게(센스버전)")
         st.code(short_text, language="text")
         
