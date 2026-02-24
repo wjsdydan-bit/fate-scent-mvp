@@ -676,7 +676,7 @@ with st.form("saju_form"):
 
 
 # =========================================================
-# 8) 분석 및 결과 (🚀 진짜 실행 시간과 동기화된 '가운데 글씨 변경' 로딩)
+# 8) 분석 및 결과 (✨ 시각적 연출을 살린 동적 로딩)
 # =========================================================
 if submit:
     if not user_name.strip():
@@ -687,20 +687,24 @@ if submit:
     calc_hour = None if know_time else b_hour
     calc_min = None if know_time else b_min
 
-    # 1) 로딩 글씨를 띄울 '빈 도화지'를 화면 중앙에 준비
+    # 1) 빈 도화지 준비
     loading = st.empty()
 
-    # 2) 첫 번째 일: 만세력 계산 시작
-    loading.markdown("<h3 style='text-align:center; color:#2a5298; margin: 28px 0;'>🔮 만세력 스캐닝 중...</h3>", unsafe_allow_html=True)
+    # 2) 만세력 스캐닝 (시각적 연출을 위해 일부러 0.7초 대기)
+    loading.markdown("<h3 style='text-align:center; color:#2a5298; margin: 40px 0;'>🔮 만세력 스캐닝 중...</h3>", unsafe_allow_html=True)
+    time.sleep(0.7) 
+    
     result = get_real_saju_elements(birth_date.year, birth_date.month, birth_date.day, calc_hour, calc_min)
     if result[0] is None:
-        loading.empty() # 에러 나면 로딩 지우기
+        loading.empty()
         st.error("사주 계산에 실패했습니다.")
         st.stop()
     saju_name, e_counts, strong, weak, gapja_str = result
 
-    # 3) 두 번째 일: 향수 매칭 시작
-    loading.markdown("<h3 style='text-align:center; color:#2a5298; margin: 28px 0;'>🌿 오행 기반 향수 매칭 중...</h3>", unsafe_allow_html=True)
+    # 3) 향수 매칭 (시각적 연출을 위해 일부러 0.7초 대기)
+    loading.markdown("<h3 style='text-align:center; color:#2a5298; margin: 40px 0;'>🌿 오행 기반 맞춤 향수 배합 중...</h3>", unsafe_allow_html=True)
+    time.sleep(0.7)
+    
     rec_df = recommend_perfumes(df.copy(), weak, strong, pref_tags, dislike_tags, brand_filter_mode)
     if rec_df.empty or len(rec_df) < 3:
         loading.empty()
@@ -708,11 +712,12 @@ if submit:
         st.stop()
     top3 = rec_df.head(3).copy()
 
-    # 4) 세 번째 일: 제일 오래 걸리는 AI 풀이 시작
-    loading.markdown("<h3 style='text-align:center; color:#2a5298; margin: 28px 0;'>✍️ 사쥬 마스터가 처방전을 쓰는 중... (약 5~10초)</h3>", unsafe_allow_html=True)
+    # 4) AI 풀이 (여기가 진짜 대기 시간이 발생하는 구간)
+    loading.markdown("<h3 style='text-align:center; color:#2a5298; margin: 40px 0;'>✍️ 사쥬 마스터가 처방전을 쓰는 중...<br><span style='font-size:14px; color:#666;'>(약 5~10초 소요)</span></h3>", unsafe_allow_html=True)
+    
     reading_result = generate_comprehensive_reading(user_name.strip(), gender, saju_name, strong, weak, top3, know_time)
 
-    # 5) 모든 일이 끝나면 로딩 글씨 싹 지우기! (그리고 결과 화면이 짠!)
+    # 5) 로딩 종료 및 화면 지우기
     loading.empty()
 
     try:
