@@ -249,19 +249,20 @@ WEAK_MEME = {
     },
 }
 def _safe_font(size=36, bold=False):
-    # ✅ 우리가 프로젝트에 넣은 폰트 파일 경로
-    path = "assets/fonts/Pretendard-Bold.ttf" if bold else "assets/fonts/Pretendard-Regular.ttf"
+    """
+    ✅ app.py 위치(base_dir) 기준으로 폰트 파일을 '절대경로'로 찾는다.
+    """
+    import os
+    font_path = os.path.join(
+        base_dir, "assets", "fonts",
+        "Pretendard-Bold.ttf" if bold else "Pretendard-Regular.ttf"
+    )
 
     try:
-        return ImageFont.truetype(path, size)
+        return ImageFont.truetype(font_path, size)
     except Exception:
-        # 혹시 폰트 파일 경로가 틀렸거나 파일이 없을 때 대비(앱 안 터지게)
-        try:
-            name = "DejaVuSans-Bold.ttf" if bold else "DejaVuSans.ttf"
-            return ImageFont.truetype(name, size)
-        except Exception:
-            return ImageFont.load_default()
-
+        # 폰트 로드 실패하면(파일 없거나 손상) 기본 폰트로 떨어짐
+        return ImageFont.load_default()
 def _draw_wrapped(draw, text, xy, font, fill, max_width, line_spacing=8):
     x, y = xy
     wrapped = textwrap.fill(text, width=max(10, int(max_width / (font.size * 0.55))))
