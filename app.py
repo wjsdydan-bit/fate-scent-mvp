@@ -946,11 +946,49 @@ if "top3" in st.session_state:
         naver0 = f"https://search.shopping.naver.com/search/all?query={urllib.parse.quote(f'{b0} {n0} 향수')}"
         st.link_button("🥇 1위 향수 시향 검색하기", naver0, use_container_width=True)
 
-    # --- 2) 상세 사주풀이 탭 ---
+    # --- 2) 상세 사주풀이 탭 (✨ 챗GPT 느낌 지우고 감성 편지 스타일로!) ---
     with tab2:
+        # 🎨 웹 폰트(고운바탕) 로드 및 편지 감성 CSS
+        letter_css = """
+        <style>
+        @import url('https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap');
+        
+        .saju-letter {
+            font-family: 'Gowun Batang', serif;
+            font-size: 16px;
+            line-height: 1.85;
+            color: #333333;
+            letter-spacing: -0.3px;
+            padding: 10px 5px;
+            word-break: keep-all;
+        }
+        .saju-letter h3 {
+            font-family: 'Gowun Batang', serif;
+            color: #1e3c72;
+            font-weight: 700;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            border-bottom: 1px dashed #d1d8e0;
+            padding-bottom: 8px;
+            font-size: 20px;
+        }
+        .saju-letter strong {
+            color: #2a5298;
+            font-weight: 700;
+            background: linear-gradient(180deg, rgba(255,255,255,0) 60%, rgba(200,220,255,0.4) 60%);
+        }
+        </style>
+        """
+        st.markdown(letter_css, unsafe_allow_html=True)
+
         st.markdown('<div class="section-card">', unsafe_allow_html=True)
+        
+        # 제목(h2) 날려버리기
         reading_body = re.sub(r"<h2[^>]*>.*?</h2>", "", reading_result, flags=re.S | re.I)
-        st.markdown(reading_body, unsafe_allow_html=True)
+        
+        # 🚨 AI가 쓴 글을 'saju-letter' 클래스로 감싸서 폰트 마법 적용!
+        st.markdown(f'<div class="saju-letter">\n{reading_body}\n</div>', unsafe_allow_html=True)
+        
         st.markdown('</div>', unsafe_allow_html=True)
 
     # --- 3) 향수 Top 3 탭 ---
