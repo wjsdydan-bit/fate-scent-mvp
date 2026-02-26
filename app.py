@@ -324,74 +324,107 @@ def make_meme_card_png(
 ):
     from io import BytesIO
     from PIL import Image, ImageDraw
-    import os
 
     W, H = size
-    img = Image.new("RGB", size, (244, 245, 247))
+
+    # ===== 1) 인스타 감성 배경 (은은한 그라데이션) =====
+    img = Image.new("RGB", size, (248, 249, 252))
     draw = ImageDraw.Draw(img)
 
-    f_title = _safe_font(62, bold=True)
+    # 위→아래 그라데이션(연한 블루 느낌)
+    top_color = (238, 244, 255)
+    bottom_color = (255, 255, 255)
+    for y in range(H):
+        t = y / (H - 1)
+        r = int(top_color[0] * (1 - t) + bottom_color[0] * t)
+        g = int(top_color[1] * (1 - t) + bottom_color[1] * t)
+        b = int(top_color[2] * (1 - t) + bottom_color[2] * t)
+        draw.line([(0, y), (W, y)], fill=(r, g, b))
+
+    # ===== 2) 폰트 =====
+    f_title = _safe_font(66, bold=True)
     f_sub = _safe_font(34, bold=False)
     f_badge = _safe_font(30, bold=True)
     f_body = _safe_font(34, bold=False)
     f_small = _safe_font(26, bold=False)
+    f_sticker = _safe_font(44, bold=True)
 
-    # 상단
-    draw.text((W//2, 90), "향수 사쥬!!!", font=f_title, fill=(30, 60, 114), anchor="mm")
-    draw.text(
-        (W//2, 160),
-        hero_text if hero_text else "부족한 기운을 채워주는 향수 처방",
-        font=f_sub,
-        fill=(90, 90, 90),
-        anchor="mm"
-    )
+    # ===== 3) 밈 문구(부족기운 개그형) =====
+    meme = WEAK_MEME.get(weak, {"title": "충전 필요", "lines": ["오늘은 충전이 필요해요", "기운을 채워볼게요", ""]})
 
-    # 메인 카드
+    # ✅ 인스타 훅: 서비스명이 아니라 "내 상태"가 제목
+    headline = f"오늘 나: {meme['title']}"
+
+    # ===== 4) 상단 헤더 =====
+    draw.text((W//2, 110), headline, font=f_title, fill=(30, 60, 114), anchor="mm")
+
+    # 히어로 문장은 너무 길면 오히려 촌스러울 수 있어서 짧게
+    subline = hero_text.strip() if hero_text else "부족한 기운을 향으로 ‘긴급 충전’"
+    if len(subline) > 26:
+        subline = subline[:26] + "…"
+    draw.text((W//2, 175), subline, font=f_sub, fill=(90, 90, 90), anchor="mm")
+
+    # ===== 5) 메인 카드(화이트) =====
     pad = 70
-    card_x1, card_y1 = pad, 240
-    card_x2, card_y2 = W - pad, 1520
-    draw.rounded_rectangle((card_x1, card_y1, card_x2, card_y2), radius=40, fill=(255, 255, 255), outline=(235, 238, 245), width=4)
+    card_x1, card_y1 = pad, 250
+    card_x2, card_y2 = W - pad, 1530
 
-    # 배지
+    # 카드 그림자(살짝)
+    shadow = Image.new("RGBA", size, (0, 0, 0, 0))
+    sdraw = ImageDraw.Draw(shadow)
+    sdraw.rounded_rectangle((card_x1+6, card_y1+8, card_x2+6, card_y2+8), radius=44, fill=(0, 0, 0, 25))
+    img = Image.alpha_composite(img.convert("RGBA"), shadow).convert("RGB")
+    draw = ImageDraw.Draw(img)
+
+    draw.rounded_rectangle((card_x1, card_y1, card_x2, card_y2), radius=44, fill=(255, 255, 255), outline=(232, 236, 245), width=4)
+
+    # ===== 6) 배지(강/부족) =====
     def badge(x, y, text):
         tw = draw.textlength(text, font=f_badge)
-        bw = int(tw) + 120  # ✅ 한글 잘림 방지(넉넉히)
+        bw = int(tw) + 120  # 한글 안 잘리게 넉넉히
         bh = 58
-        draw.rounded_rectangle((x, y, x + bw, y + bh), radius=999, fill=(250, 250, 252), outline=(225, 228, 235), width=3)
+        draw.rounded_rectangle((x, y, x + bw, y + bh), radius=999, fill=(248, 249, 252), outline=(225, 228, 235), width=3)
         draw.text((x + bw/2, y + bh/2), text, font=f_badge, fill=(40, 40, 40), anchor="mm")
 
     badge(card_x1 + 40, card_y1 + 40, f"강한 기운: {ELEMENT_EMOJI[strong]} {ELEMENTS_KO[strong]}")
     badge(card_x1 + 40, card_y1 + 120, f"부족 기운: {ELEMENT_EMOJI[weak]} {ELEMENTS_KO[weak]}")
 
-    # 부족기운 밈
-    meme = WEAK_MEME.get(weak, {"title": "충전 필요", "lines": ["오늘은 충전이 필요해요", "기운을 채워볼게요", ""]})
-    y = card_y1 + 220
-    draw.text((card_x1 + 40, y), f"📌 오늘의 상태: {meme['title']}", font=_safe_font(40, bold=True), fill=(30, 60, 114))
-    y += 70
+    # ===== 7) 핵심: 오늘의 상태를 '스티커'로 크게 =====
+    sticker_x1 = card_x1 + 40
+    sticker_y1 = card_y1 + 210
+    sticker_x2 = card_x2 - 40
+    sticker_y2 = sticker_y1 + 110
+
+    draw.rounded_rectangle((sticker_x1, sticker_y1, sticker_x2, sticker_y2), radius=22, fill=(238, 244, 255), outline=(210, 225, 255), width=3)
+    draw.text((sticker_x1 + 20, sticker_y1 + 55), f"📌 {meme['title']} 상태입니다", font=f_sticker, fill=(30, 60, 114), anchor="lm")
+
+    # 밈 증상 3줄
+    y = sticker_y2 + 25
     for line in meme["lines"][:3]:
         draw.text((card_x1 + 60, y), f"• {line}", font=f_body, fill=(60, 60, 60))
-        y += 52
+        y += 54
 
     # 구분선
-    y += 35
+    y += 18
     draw.line((card_x1 + 40, y, card_x2 - 40, y), fill=(235, 238, 245), width=4)
-    y += 35
+    y += 28
 
-    # Top1
+    # ===== 8) TOP1 (딱 보기 좋게) =====
     draw.text((card_x1 + 40, y), "🥇 오늘의 처방 TOP 1", font=_safe_font(38, bold=True), fill=(231, 76, 60))
     y += 70
 
-    draw.text((card_x1 + 40, y), str(best_brand), font=_safe_font(52, bold=True), fill=(30, 60, 114))
-    y += 72
-    y = _draw_wrapped(draw, str(best_name), (card_x1 + 40, y), font=_safe_font(44, bold=True), fill=(50, 50, 50),
+    draw.text((card_x1 + 40, y), str(best_brand), font=_safe_font(56, bold=True), fill=(30, 60, 114))
+    y += 78
+    y = _draw_wrapped(draw, str(best_name), (card_x1 + 40, y), font=_safe_font(46, bold=True), fill=(45, 45, 45),
                       max_width=(card_x2 - card_x1 - 80), line_spacing=10)
-    y += 30
+    y += 18
 
-    why_line = f"👉 {ELEMENTS_KO[weak]} 기운 긴급 충전템"
-    y = _draw_wrapped(draw, why_line, (card_x1 + 40, y), font=f_body, fill=(80, 80, 80),
+    # ✅ 인스타용 한줄: 너무 길게 설명하지 말고 “짧고 센” 문장
+    why_line = f"👉 {ELEMENTS_KO[weak]} 기운 ‘긴급 충전템’"
+    y = _draw_wrapped(draw, why_line, (card_x1 + 40, y), font=_safe_font(34, bold=False), fill=(80, 80, 80),
                       max_width=(card_x2 - card_x1 - 80), line_spacing=8)
 
-    # 하단 QR + 링크
+    # ===== 9) 하단: QR + 짧은 링크 =====
     y_qr_top = card_y2 - 290
     draw.line((card_x1 + 40, y_qr_top - 25, card_x2 - 40, y_qr_top - 25), fill=(235, 238, 245), width=4)
 
@@ -409,15 +442,16 @@ def make_meme_card_png(
         qr_ok = False
 
     cta_x = card_x1 + (300 if qr_ok else 40)
-    draw.text((cta_x, y_qr_top + 10), "📲 나도 해보기", font=_safe_font(38, bold=True), fill=(30, 60, 114))
-    draw.text((cta_x, y_qr_top + 70), "QR 찍거나 아래 링크로!", font=f_small, fill=(100, 100, 100))
+    draw.text((cta_x, y_qr_top + 10), "📲 나도 해보기", font=_safe_font(40, bold=True), fill=(30, 60, 114))
+    draw.text((cta_x, y_qr_top + 72), "QR 찍고 테스트 ㄱㄱ", font=f_small, fill=(100, 100, 100))
 
     show_link = str(app_link)
     if len(show_link) > 42:
         show_link = show_link[:39] + "..."
     draw.text((cta_x, y_qr_top + 115), show_link, font=_safe_font(28, bold=False), fill=(60, 60, 60))
 
-    draw.text((W//2, H - 70), "Fate Scent / 향수 사쥬!!!", font=_safe_font(24, bold=False), fill=(140, 140, 140), anchor="mm")
+    # ===== 10) 워터마크(작게, 귀엽게) =====
+    draw.text((W//2, H - 68), "Fate Scent / 향수 사쥬!!!", font=_safe_font(24, bold=False), fill=(140, 140, 140), anchor="mm")
 
     buf = BytesIO()
     img.save(buf, format="PNG")
