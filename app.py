@@ -946,48 +946,69 @@ if "top3" in st.session_state:
         naver0 = f"https://search.shopping.naver.com/search/all?query={urllib.parse.quote(f'{b0} {n0} 향수')}"
         st.link_button("🥇 1위 향수 시향 검색하기", naver0, use_container_width=True)
 
-    # --- 2) 상세 사주풀이 탭 (✨ 챗GPT 느낌 지우고 감성 편지 스타일로!) ---
+    # --- 2) 상세 사주풀이 탭 (✨ 챗GPT 느낌 쫙 뺀 세련된 매거진/처방전 스타일) ---
     with tab2:
-        # 🎨 웹 폰트(고운바탕) 로드 및 편지 감성 CSS
-        letter_css = """
+        # 🎨 기본 폰트는 유지하되, 자간/행간/강조 표시만 고급스럽게 세팅
+        magazine_css = """
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap');
-        
-        .saju-letter {
-            font-family: 'Gowun Batang', serif;
-            font-size: 16px;
-            line-height: 1.85;
-            color: #333333;
-            letter-spacing: -0.3px;
+        .saju-magazine {
+            /* 폰트는 앱 기본(고딕) 유지, 가독성만 극대화 */
+            font-size: 15px;
+            line-height: 1.8; /* 줄 간격을 넓혀 에세이처럼 */
+            color: #444444; /* 완전 검은색보다 부드러운 다크 그레이 */
+            letter-spacing: -0.5px;
             padding: 10px 5px;
-            word-break: keep-all;
+            word-break: keep-all; /* 단어 단위로 끊어져서 예쁨 */
         }
-        .saju-letter h3 {
-            font-family: 'Gowun Batang', serif;
+        
+        /* 제목(h3) 디자인: 밑줄과 여백으로 구분감 주기 */
+        .saju-magazine h3 {
+            color: #1e3c72;
+            font-weight: 800;
+            font-size: 18px;
+            margin-top: 35px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #eef2ff;
+        }
+        
+        /* 챗GPT 특유의 **볼드체**를 '형광펜 밑줄' 감성으로 변경 */
+        .saju-magazine strong {
             color: #1e3c72;
             font-weight: 700;
-            margin-top: 30px;
-            margin-bottom: 15px;
-            border-bottom: 1px dashed #d1d8e0;
-            padding-bottom: 8px;
-            font-size: 20px;
+            /* 글씨 아래쪽에만 은은하게 파란색 형광펜 칠한 느낌 */
+            background: linear-gradient(to top, #e8f0fe 35%, transparent 35%);
+            padding: 0 2px;
         }
-        .saju-letter strong {
-            color: #2a5298;
-            font-weight: 700;
-            background: linear-gradient(180deg, rgba(255,255,255,0) 60%, rgba(200,220,255,0.4) 60%);
+        
+        /* 리스트(ul, li) 기호를 기계적인 까만 점 대신 예쁘게 */
+        .saju-magazine ul {
+            list-style: none;
+            padding-left: 10px;
+        }
+        .saju-magazine ul li {
+            position: relative;
+            padding-left: 18px;
+            margin-bottom: 8px;
+        }
+        .saju-magazine ul li::before {
+            content: "✨"; /* 기본 점 대신 반짝이 아이콘 */
+            position: absolute;
+            left: 0;
+            top: 2px;
+            font-size: 12px;
         }
         </style>
         """
-        st.markdown(letter_css, unsafe_allow_html=True)
+        st.markdown(magazine_css, unsafe_allow_html=True)
 
         st.markdown('<div class="section-card">', unsafe_allow_html=True)
         
         # 제목(h2) 날려버리기
         reading_body = re.sub(r"<h2[^>]*>.*?</h2>", "", reading_result, flags=re.S | re.I)
         
-        # 🚨 AI가 쓴 글을 'saju-letter' 클래스로 감싸서 폰트 마법 적용!
-        st.markdown(f'<div class="saju-letter">\n{reading_body}\n</div>', unsafe_allow_html=True)
+        # 🚨 AI 글을 'saju-magazine' 클래스로 감싸서 디자인 마법 적용!
+        st.markdown(f'<div class="saju-magazine">\n{reading_body}\n</div>', unsafe_allow_html=True)
         
         st.markdown('</div>', unsafe_allow_html=True)
 
