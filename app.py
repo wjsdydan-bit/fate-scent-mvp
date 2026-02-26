@@ -1075,12 +1075,10 @@ if "top3" in st.session_state:
     st.markdown("### 📸 밈카드로 공유하기")
     st.info("인스타 스토리/커뮤니티에 바로 올릴 수 있게 ‘한 장’으로 만들어드려요. (다운로드 가능)")
 
-    # Top1 정보 가져오기
     row0 = top3.iloc[0]
     best_brand = safe_text(row0.get("Brand"))
     best_name = safe_text(row0.get("Name"))
 
-    # 히어로 문장(있으면 사용)
     hero_text = ""
     try:
         m = re.search(r"<h2[^>]*>(.*?)</h2>", st.session_state.get("reading_result",""), flags=re.S | re.I)
@@ -1089,10 +1087,9 @@ if "top3" in st.session_state:
     except Exception:
         pass
 
-    # ✅ 너 배포 링크로 꼭 바꿔줘!
+    # ✅ 너 배포 링크로 바꾸기
     app_link = "https://your-perfume-saju-link.streamlit.app"
 
-    # PNG 생성
     png_buf = make_meme_card_png(
         user_name=user_name,
         strong=strong,
@@ -1103,10 +1100,8 @@ if "top3" in st.session_state:
         hero_text=hero_text,
     )
 
-    # 미리보기
     st.image(png_buf, use_container_width=True)
 
-    # 다운로드 버튼
     st.download_button(
         "⬇️ 밈카드 이미지 다운로드(PNG)",
         data=png_buf.getvalue(),
