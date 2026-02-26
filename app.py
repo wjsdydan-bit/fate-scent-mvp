@@ -1070,47 +1070,47 @@ if "top3" in st.session_state:
             st.link_button(f"{['🥇','🥈','🥉'][i]} {b_name} - {p_name} 검색하기", naver_url, use_container_width=True)
         st.info("Tip) 가장 끌리는 1개만 먼저 시향해도 충분해요. ‘첫인상’이 맞는지 체크해보세요!")
 
-   # --- 4) 🥺 사달라고 조르기 (바이럴 공유 & 설문) 탭 ---
-   with tab4:
-    st.markdown("### 📸 밈카드로 공유하기")
-    st.info("인스타 스토리/커뮤니티에 바로 올릴 수 있게 ‘한 장’으로 만들어드려요. (다운로드 가능)")
+       # --- 4) 🥺 사쥬!!!(공유) 탭 ---
+    with tab4:
+        st.markdown("### 📸 밈카드로 공유하기")
+        st.info("인스타 스토리/커뮤니티에 바로 올릴 수 있게 ‘한 장’으로 만들어드려요. (다운로드 가능)")
 
-    row0 = top3.iloc[0]
-    best_brand = safe_text(row0.get("Brand"))
-    best_name = safe_text(row0.get("Name"))
+        row0 = top3.iloc[0]
+        best_brand = safe_text(row0.get("Brand"))
+        best_name = safe_text(row0.get("Name"))
 
-    hero_text = ""
-    try:
-        m = re.search(r"<h2[^>]*>(.*?)</h2>", st.session_state.get("reading_result",""), flags=re.S | re.I)
-        if m:
-            hero_text = re.sub(r"<[^>]+>", "", m.group(1)).strip()
-    except Exception:
-        pass
+        hero_text = ""
+        try:
+            m = re.search(r"<h2[^>]*>(.*?)</h2>", st.session_state.get("reading_result",""), flags=re.S | re.I)
+            if m:
+                hero_text = re.sub(r"<[^>]+>", "", m.group(1)).strip()
+        except Exception:
+            pass
 
-    # ✅ 너 배포 링크로 바꾸기
-    app_link = "https://your-perfume-saju-link.streamlit.app"
+        # ✅ 너 배포 링크로 바꾸기
+        app_link = "https://your-perfume-saju-link.streamlit.app"
 
-    png_buf = make_meme_card_png(
-        user_name=user_name,
-        strong=strong,
-        weak=weak,
-        best_brand=best_brand,
-        best_name=best_name,
-        app_link=app_link,
-        hero_text=hero_text,
-    )
+        png_buf = make_meme_card_png(
+            user_name=user_name,
+            strong=strong,
+            weak=weak,
+            best_brand=best_brand,
+            best_name=best_name,
+            app_link=app_link,
+            hero_text=hero_text,
+        )
 
-    st.image(png_buf, use_container_width=True)
+        st.image(png_buf, use_container_width=True)
 
-    st.download_button(
-        "⬇️ 밈카드 이미지 다운로드(PNG)",
-        data=png_buf.getvalue(),
-        file_name=f"fate_scent_{st.session_state.get('session_id','result')}.png",
-        mime="image/png",
-        use_container_width=True
-    )
+        st.download_button(
+            "⬇️ 밈카드 이미지 다운로드(PNG)",
+            data=png_buf.getvalue(),
+            file_name=f"fate_scent_{st.session_state.get('session_id','result')}.png",
+            mime="image/png",
+            use_container_width=True
+        )
 
-    st.caption("Tip) 이 이미지 1장만 올려도 사람들이 ‘나도 해볼래’ 하고 들어와요.")
+        st.caption("Tip) 이 이미지 1장만 올려도 사람들이 ‘나도 해볼래’ 하고 들어와요.")
 # =========================================================
 # 9) 관리자용 로그 (하단 숨김)
 # =========================================================
