@@ -965,19 +965,16 @@ if "top3" in st.session_state:
        # --- 4) 🥺 사쥬!!!(공유) 탭 ---
    # --- 4) 🥺 사달라고 조르기 (바이럴 공유 & 설문) 탭 ---
     with tab4:
-        st.markdown("### 📸 인스타 박제")
-        st.info("아래 **‘운명 향수 부적’**을 캡처해서 인스타 스토리에 올리고 친구/애인을 태그해보세요! 💳💖")
+        st.markdown("### 📸 인스타 스토리에 박제하기")
+        st.info("아래 **'송금 요청서'**를 캡처해서 스토리에 올리고 친구/애인을 태그해보세요! 💸")
 
         row0 = top3.iloc[0]
         best_brand = safe_text(row0.get("Brand"))
         best_name = safe_text(row0.get("Name"))
 
-        meme_info = WEAK_MEME.get(weak, {"title": "기운 0%", "lines": ["충전이 시급합니다"]})
-        meme_title = meme_info["title"]
-        meme_line = meme_info["lines"][0]
-
         app_link = "https://fate-scent-mvp.streamlit.app/"
 
+        # QR 코드 생성 (토스 블루 컬러 적용)
         qr_img_b64 = ""
         try:
             import qrcode
@@ -986,44 +983,64 @@ if "top3" in st.session_state:
             qr = qrcode.QRCode(box_size=4, border=0)
             qr.add_data(app_link)
             qr.make(fit=True)
-            img = qr.make_image(fill_color="#ff4d6d", back_color="transparent")
+            # 🎨 토스 시그니처 블루(#3182f6)로 QR코드 생성
+            img = qr.make_image(fill_color="#3182f6", back_color="transparent")
             buf = BytesIO()
             img.save(buf, format="PNG")
             qr_img_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
         except Exception:
             qr_img_b64 = ""
 
-        st.markdown("<div style='text-align:center; font-size:12px; color:#888; margin-bottom:10px;'>📌 <b>모바일:</b> 전원+볼륨 / <b>PC:</b> Win+Shift+S 또는 Cmd+Shift+4</div>", unsafe_allow_html=True)
-
+        # 하단 QR 영역 (토스 앱 배너 스타일)
         qr_block = ""
         if qr_img_b64:
-            # 🚨 <img> 태그 끝에 닫는 기호(/>) 추가 및 한 줄로 압축해서 렌더링 깨짐 완벽 방지!
-            qr_block = f"""<div style="margin-top:20px; display:flex; justify-content:center; align-items:center; gap:12px; background:rgba(255,255,255,0.7); padding:10px; border-radius:16px;"><img src="data:image/png;base64,{qr_img_b64}" style="width:50px; height:50px; border-radius:8px;" /><div style="text-align:left; line-height:1.2;"><div style="font-size:11px; font-weight:800; color:#ff4d6d;">📲 카메라로 1초 컷</div><div style="font-size:10px; color:#666;">내 운명의 향수 찾기</div></div></div>"""
+            qr_block = f"""
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#f2f4f6; border-radius:16px; padding:16px; margin-top:24px;">
+                <div style="text-align:left; line-height:1.4;">
+                    <div style="font-size:13px; font-weight:800; color:#3182f6;">나도 운명 향수 찾기</div>
+                    <div style="font-size:12px; font-weight:600; color:#4e5968;">QR 스캔하고 테스트하기</div>
+                </div>
+                <img src="data:image/png;base64,{qr_img_b64}" style="width:44px; height:44px; border-radius:8px;">
+            </div>
+            """
 
-        # 🚨 들여쓰기 완벽 제거. 줄바꿈 최소화해서 스트림릿 버그 차단!
-        receipt_html = f"""
-<div style="background:linear-gradient(135deg, #fff0f3 0%, #fdfbfb 100%); border:3px solid #ffb3c1; border-radius:32px; padding:32px 24px; text-align:center; max-width:340px; margin:0 auto 20px auto; box-shadow:0 12px 30px rgba(255, 179, 193, 0.25); position:relative; overflow:hidden;">
-<div style="font-size:32px; margin-bottom:8px;">💖✨</div>
-<div style="font-size:11px; font-weight:800; color:#ff85a1; letter-spacing:2px; margin-bottom:12px;">OFFICIAL FATE SCENT</div>
-<div style="font-size:26px; font-weight:900; color:#ff4d6d; margin-bottom:24px;">이 향수 사쥬!! 🥺</div>
-<div style="background:#ffffff; border-radius:20px; padding:22px 16px; box-shadow:0 8px 20px rgba(0,0,0,0.04); border:1px solid #ffe3e8;">
-<div style="font-size:12px; color:#888; margin-bottom:4px;">🚨 현재 상태: <span style="color:#e74c3c; font-weight:800;">{meme_title}</span></div>
-<div style="font-size:14px; font-weight:700; color:#333; margin-bottom:18px;">"{meme_line}"</div>
-<hr style="border:none; border-top:1px dashed #ffc8d2; margin:15px 0;">
-<div style="font-size:12px; color:#ff85a1; font-weight:800; margin-bottom:6px;">🥇 운명 처방 1순위</div>
-<div style="font-size:22px; font-weight:900; color:#1e3c72; line-height:1.3;">{best_brand}</div>
-<div style="font-size:15px; font-weight:700; color:#444; margin-top:6px;">{best_name}</div>
+        # 💸 토스/애플페이 스타일 UI (들여쓰기 100% 제거, 렌더링 깨짐 완벽 방지)
+        toss_ui_html = f"""
+<div style="background-color:#f9fafb; padding:20px; border-radius:24px; display:flex; justify-content:center;">
+<div style="background:#ffffff; border-radius:24px; padding:32px 24px; text-align:center; width:100%; max-width:340px; box-shadow:0 4px 20px rgba(0,0,0,0.04); position:relative;">
+<div style="width:56px; height:56px; background:#e8f3ff; border-radius:50%; display:flex; justify-content:center; align-items:center; font-size:28px; margin:0 auto 16px auto;">
+💸
 </div>
-<div style="margin-top:18px; font-size:13px; color:#555; background:rgba(255,255,255,0.6); border-radius:14px; padding:14px; line-height:1.6;">
-<b>사유:</b> 내 사주에 부족한 <b>{ELEMENTS_KO[weak]}</b> 기운 보충을 위해 긴급히 필요함.<br>
-<span style="color:#ff4d6d; font-weight:900; font-size:14px;">빨리 결제 요망 💳</span>
+<div style="font-size:18px; font-weight:800; color:#191f28; line-height:1.4; margin-bottom:8px;">
+<span style="color:#3182f6;">{user_name}</span>님이<br>결제를 요청했어요
+</div>
+<div style="font-size:22px; font-weight:900; color:#191f28; margin:24px 0 6px 0;">
+{best_brand}
+</div>
+<div style="font-size:15px; font-weight:600; color:#4e5968; margin-bottom:24px;">
+{best_name}
+</div>
+<div style="background:#f2f4f6; border-radius:16px; padding:16px; text-align:left; margin-bottom:24px;">
+<div style="font-size:12px; font-weight:700; color:#8b95a1; margin-bottom:6px;">요청 사유</div>
+<div style="font-size:14px; font-weight:700; color:#333d4b; line-height:1.5;">
+내 사주에 <b>{ELEMENTS_KO[weak]}</b> 기운이 부족하대요.<br>
+나 이거 안 뿌리면 진짜 큰일남 🥺 사쥬!!!
+</div>
+</div>
+<div style="display:flex; flex-direction:column; gap:8px;">
+<div style="background:#3182f6; color:#ffffff; font-size:15px; font-weight:800; padding:16px; border-radius:16px;">
+쿨하게 결제해주기
+</div>
+<div style="background:#f2f4f6; color:#4e5968; font-size:15px; font-weight:700; padding:16px; border-radius:16px;">
+모른 척하기 (위험)
+</div>
 </div>
 {qr_block}
 </div>
+</div>
 """
-        st.markdown(receipt_html, unsafe_allow_html=True)
+        st.markdown(toss_ui_html, unsafe_allow_html=True)
 
-        # 카톡 공유 싹 삭제하고 바로 설문조사로 깔끔하게 마무리!
         st.markdown("---")
         st.markdown("### 📝 서비스 개선에 참여하기")
         st.info("결과가 맘에 드셨다면 1분 설문 부탁드려요! 여러분의 피드백이 다음 업데이트에 바로 반영됩니다.")
