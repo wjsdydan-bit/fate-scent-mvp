@@ -9,6 +9,9 @@ import uuid
 import re
 import html as _html
 from korean_lunar_calendar import KoreanLunarCalendar
+from io import BytesIO
+from PIL import Image, ImageDraw, ImageFont
+import textwrap
 
 # OpenAI SDK
 try:
@@ -223,6 +226,140 @@ def get_gender_tone(gender):
         return {"suffix": "님", "style": "깔끔하고 직관적인 톤"}
     return {"suffix": "님", "style": "중립적이고 친근한 톤"}
 
+WEAK_MEME = {
+    "Wood": {
+        "title": "생기 0% 🌱",
+        "lines": ["의욕이 갑자기 로그아웃됨", "새로운 시작 버튼이 안 눌림", "계획만 세우고 누워버림"],
+    },
+    "Fire": {
+        "title": "텐션 0% 🔥",
+        "lines": ["웃음 버튼이 고장남", "말수가 줄고 조용해짐", "추진력 배터리 방전"],
+    },
+    "Earth": {
+        "title": "안정 0% 🪨",
+        "lines": ["마음이 붕 떠있는 느낌", "컨디션이 널뛰기함", "꾸준함이 증발함"],
+    },
+    "Metal": {
+        "title": "정리/결단 0% ⚙️",
+        "lines": ["결정이 자꾸 미뤄짐", "기준이 흔들려 후회함", "정리정돈이 안 됨(현기증)"],
+    },
+    "Water": {
+        "title": "여유/감성 0% 💧",
+        "lines": ["마음이 바짝 마름", "여유가 없고 예민해짐", "감정 정리가 어려움"],
+    },
+}
+def _safe_font(size=36, bold=False):
+    try:
+        name = "DejaVuSans-Bold.ttf" if bold else "DejaVuSans.ttf"
+        return ImageFont.truetype(name, size)
+    except Exception:
+        return ImageFont.load_default()
+
+def _draw_wrapped(draw, text, xy, font, fill, max_width, line_spacing=8):
+    x, y = xy
+    wrapped = textwrap.fill(text, width=max(10, int(max_width / (font.size * 0.55))))
+    for line in wrapped.split("\n"):
+        draw.text((x, y), line, font=font, fill=fill)
+        y += font.size + line_spacing
+    return y
+
+def make_meme_card_png(
+    user_name: str,
+    strong: str,
+    weak: str,
+    best_brand: str,
+    best_name: str,
+    app_link: str,
+    hero_text: str = "",
+    size=(1080, 1920),
+):
+    W, H = size
+    img = Image.new("RGB", size, (244, 245, 247))
+    draw = ImageDraw.Draw(img)
+
+    f_title = _safe_font(62, bold=True)
+    f_sub = _safe_font(34, bold=False)
+    f_badge = _safe_font(30, bold=True)
+    f_body = _safe_font(34, bold=False)
+    f_small = _safe_font(26, bold=False)
+
+    draw.text((W//2, 90), "향수 사쥬!!!", font=f_title, fill=(30, 60, 114), anchor="mm")
+    if hero_text:
+        draw.text((W//2, 160), hero_text, font=f_sub, fill=(90, 90, 90), anchor="mm")
+    else:
+        draw.text((W//2, 160), "부족한 기운을 채워주는 향수 처방", font=f_sub, fill=(90, 90, 90), anchor="mm")
+
+    pad = 70
+    card_x1, card_y1 = pad, 240
+    card_x2, card_y2 = W - pad, 1520
+    draw.rounded_rectangle((card_x1, card_y1, card_x2, card_y2), radius=40, fill=(255, 255, 255), outline=(235, 238, 245), width=4)
+
+    def badge(x, y, text):
+        tw = draw.textlength(text, font=f_badge)
+        bw = int(tw) + 44
+        bh = 58
+        draw.rounded_rectangle((x, y, x + bw, y + bh), radius=999, fill=(250, 250, 252), outline=(225, 228, 235), width=3)
+        draw.text((x + bw/2, y + bh/2), text, font=f_badge, fill=(40, 40, 40), anchor="mm")
+
+    badge(card_x1 + 40, card_y1 + 40, f"강한 기운: {ELEMENT_EMOJI[strong]} {ELEMENTS_KO[strong]}")
+    badge(card_x1 + 40, card_y1 + 120, f"부족 기운: {ELEMENT_EMOJI[weak]} {ELEMENTS_KO[weak]}")
+
+    meme = WEAK_MEME.get(weak, {"title": "충전 필요", "lines": ["오늘은 충전이 필요해요", "기운을 채워볼게요", ""]})
+    y = card_y1 + 220
+    draw.text((card_x1 + 40, y), f"📌 오늘의 상태: {meme['title']}", font=_safe_font(40, bold=True), fill=(30, 60, 114))
+    y += 70
+    for line in meme["lines"][:3]:
+        draw.text((card_x1 + 60, y), f"• {line}", font=f_body, fill=(60, 60, 60))
+        y += 52
+
+    y += 35
+    draw.line((card_x1 + 40, y, card_x2 - 40, y), fill=(235, 238, 245), width=4)
+    y += 35
+
+    draw.text((card_x1 + 40, y), "🥇 오늘의 처방 TOP 1", font=_safe_font(38, bold=True), fill=(231, 76, 60))
+    y += 70
+
+    draw.text((card_x1 + 40, y), best_brand, font=_safe_font(52, bold=True), fill=(30, 60, 114))
+    y += 72
+    y = _draw_wrapped(draw, best_name, (card_x1 + 40, y), font=_safe_font(44, bold=True), fill=(50, 50, 50),
+                      max_width=(card_x2 - card_x1 - 80), line_spacing=10)
+    y += 30
+
+    why_line = f"👉 {ELEMENTS_KO[weak]} 기운 긴급 충전템"
+    y = _draw_wrapped(draw, why_line, (card_x1 + 40, y), font=f_body, fill=(80, 80, 80),
+                      max_width=(card_x2 - card_x1 - 80), line_spacing=8)
+
+    y_qr_top = card_y2 - 290
+    draw.line((card_x1 + 40, y_qr_top - 25, card_x2 - 40, y_qr_top - 25), fill=(235, 238, 245), width=4)
+
+    qr_ok = False
+    try:
+        import qrcode
+        qr = qrcode.QRCode(box_size=8, border=1)
+        qr.add_data(app_link)
+        qr.make(fit=True)
+        qr_img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
+        qr_img = qr_img.resize((220, 220))
+        img.paste(qr_img, (card_x1 + 40, y_qr_top))
+        qr_ok = True
+    except Exception:
+        qr_ok = False
+
+    cta_x = card_x1 + (300 if qr_ok else 40)
+    draw.text((cta_x, y_qr_top + 10), "📲 나도 해보기", font=_safe_font(38, bold=True), fill=(30, 60, 114))
+    draw.text((cta_x, y_qr_top + 70), "QR 찍거나 아래 링크로!", font=f_small, fill=(100, 100, 100))
+
+    show_link = app_link
+    if len(show_link) > 42:
+        show_link = show_link[:39] + "..."
+    draw.text((cta_x, y_qr_top + 115), show_link, font=_safe_font(28, bold=False), fill=(60, 60, 60))
+
+    draw.text((W//2, H - 70), "Fate Scent / 향수 사쥬!!!", font=_safe_font(24, bold=False), fill=(140, 140, 140), anchor="mm")
+
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    return buf
 
 # ✅ 요약 탭용: 영어 Notes → 한글 요약(룰 기반)
 def notes_to_korean_summary(notes_text: str) -> str:
@@ -935,78 +1072,50 @@ if "top3" in st.session_state:
 
    # --- 4) 🥺 사달라고 조르기 (바이럴 공유 & 설문) 탭 ---
     with tab4:
-        st.markdown("### 📸 인스타 스토리에 박제하기 (사쥬!!!)")
-        st.info("아래 ‘운명 향수 청구서’를 캡처해서 인스타 스토리에 올리고, 친구/애인 태그해서 **사쥬!!!** 해보세요 💳💖")
+    st.markdown("### 📸 밈카드로 공유하기")
+    st.info("인스타 스토리/커뮤니티에 바로 올릴 수 있게 ‘한 장’으로 만들어드려요. (다운로드 가능)")
 
-        row0 = top3.iloc[0]
-        best_brand = safe_text(row0.get("Brand"))
-        best_name = safe_text(row0.get("Name"))
+    # Top1 정보 가져오기
+    row0 = top3.iloc[0]
+    best_brand = safe_text(row0.get("Brand"))
+    best_name = safe_text(row0.get("Name"))
 
-        # QR 코드 생성
-        qr_img_b64 = ""
-        # 🚨 여기에 네 진짜 앱 링크 적용 완료!
-        app_link = "https://fate-scent-mvp.streamlit.app/" 
-        
-        try:
-            import qrcode
-            from io import BytesIO
-            import base64
-            qr = qrcode.QRCode(box_size=6, border=1)
-            qr.add_data(app_link)
-            qr.make(fit=True)
-            img = qr.make_image(fill_color="black", back_color="white")
-            buf = BytesIO()
-            img.save(buf, format="PNG")
-            qr_img_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
-        except Exception:
-            qr_img_b64 = ""
+    # 히어로 문장(있으면 사용)
+    hero_text = ""
+    try:
+        m = re.search(r"<h2[^>]*>(.*?)</h2>", st.session_state.get("reading_result",""), flags=re.S | re.I)
+        if m:
+            hero_text = re.sub(r"<[^>]+>", "", m.group(1)).strip()
+    except Exception:
+        pass
 
-        st.markdown("<div class='small-muted'>📌 <b>캡처 팁</b> · 모바일: <b>전원+볼륨</b> · PC: <b>Win+Shift+S / Cmd+Shift+4</b></div>", unsafe_allow_html=True)
+    # ✅ 너 배포 링크로 꼭 바꿔줘!
+    app_link = "https://your-perfume-saju-link.streamlit.app"
 
-        qr_block = ""
-        if qr_img_b64:
-            qr_block = f'<div style="margin-top:12px; display:flex; justify-content:center;"><div style="background:#fff; border:1px solid #eee; border-radius:12px; padding:10px;"><div style="font-size:12px; color:#666; margin-bottom:6px; text-align:center;">📲 나도 해보기</div><img src="data:image/png;base64,{qr_img_b64}" style="width:120px; height:120px;"></div></div>'
+    # PNG 생성
+    png_buf = make_meme_card_png(
+        user_name=user_name,
+        strong=strong,
+        weak=weak,
+        best_brand=best_brand,
+        best_name=best_name,
+        app_link=app_link,
+        hero_text=hero_text,
+    )
 
-        # 🚨 들여쓰기 100% 제거! 왼쪽 벽에 딱 붙임!
-        receipt_html = f"""
-<div style="background-color:#fff; border:2px dashed #d1d8e0; border-radius:16px; padding:22px; text-align:center; max-width:340px; margin: 12px auto 18px auto; box-shadow: 0 6px 18px rgba(0,0,0,0.06);">
-<div style="font-size:24px; margin-bottom:6px;">🧾</div>
-<div style="font-size:11px; letter-spacing:1px; color:#999; margin-bottom:6px;">FATE SCENT / 향수 사쥬!!!</div>
-<div style="font-size:16px; font-weight:900; color:#1e3c72; margin: 6px 0 10px 0;">운명 향수 청구서</div>
-<div style="font-size:13px; color:#666; margin-bottom:10px; line-height:1.45;"><b>{hero_text}</b></div>
-<div style="font-size:13px; color:#7f8c8d; margin-bottom:4px;">청구 대상: <span style="border-bottom:1px solid #7f8c8d; padding-bottom:2px;">나를 사랑하는 사람</span> 🥺</div>
-<hr style="border-top:1px dashed #d1d8e0; margin:14px 0;">
-<div style="font-size:12px; color:#e74c3c; font-weight:800; margin-bottom:6px;">🔥 처방 1순위</div>
-<div style="font-size:18px; font-weight:900; color:#1e3c72; margin-bottom:4px;">{best_brand}</div>
-<div style="font-size:14px; font-weight:800; color:#34495e; margin-bottom:12px;">{best_name}</div>
-<div style="font-size:13px; color:#555; background:#f8f9fa; padding:10px; border-radius:10px; line-height:1.55;">
-<b>사유:</b> 내 사주에 부족한 <b>{ELEMENTS_KO[weak]}</b> 기운 보충을 위해 긴급히 필요함.<br>
-<span style="color:#2a5298; font-weight:800;">사달라고 조르는 중… 사쥬!!! 💳💖</span>
-</div>
-<div style="margin-top:10px; font-size:12px; color:#888;">결제 기한: 내 마음이 바뀌기 전까지</div>
-{qr_block}
-</div>
-"""
-        st.markdown(receipt_html, unsafe_allow_html=True)
+    # 미리보기
+    st.image(png_buf, use_container_width=True)
 
-        st.markdown("---")
-        st.markdown("### 💬 카톡으로 대놓고 링크 보내기")
-        st.write("오른쪽 위 **복사 버튼(📋)** 눌러서 카톡방에 바로 붙여넣기 하면 끝!")
+    # 다운로드 버튼
+    st.download_button(
+        "⬇️ 밈카드 이미지 다운로드(PNG)",
+        data=png_buf.getvalue(),
+        file_name=f"fate_scent_{st.session_state.get('session_id','result')}.png",
+        mime="image/png",
+        use_container_width=True
+    )
 
-        # 줄바꿈(\n)을 명확하게 처리해서 복사했을 때 예쁘게 나오게 함!
-        short_text = f"나 방금 ‘향수 사쥬!!!’ 했는데…\n🥇 {best_brand} - {best_name}\n이거 나한테 꼭 필요하대… 사쥬!!! 🥺💳💖\n👉 {app_link}"
-        long_text = f"나 사주 봤는데, 내 운을 틔워줄 운명의 향수가 나왔어! 🥺✨\n\n[내 처방전 1순위]\n🥇 {best_brand} - {best_name}\n\n내 사주에 부족한 {ELEMENTS_KO[weak]} 기운을 채워주는 향이래.\n나 이거 사주면 진짜 평생 잘할게… 사쥬!!! 💳💖\n\n👉 너도 테스트 해봐!\n{app_link}"
-
-        st.markdown("#### 🔽 짧게(센스버전)")
-        st.code(short_text, language="text")
-        
-        st.markdown("#### 🔽 길게(진지버전)")
-        st.code(long_text, language="text")
-
-        st.markdown("---")
-        st.markdown("### 📝 서비스 개선에 참여하기")
-        st.info("결과가 맘에 드셨다면 1분 설문 부탁드려요! 여러분의 피드백이 다음 업데이트에 바로 반영됩니다.")
-        st.link_button("📝 1분 설문 참여하기 (세션ID 자동입력)", survey_url, use_container_width=True)
+    st.caption("Tip) 이 이미지 1장만 올려도 사람들이 ‘나도 해볼래’ 하고 들어와요.")
 # =========================================================
 # 9) 관리자용 로그 (하단 숨김)
 # =========================================================
