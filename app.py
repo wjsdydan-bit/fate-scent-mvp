@@ -965,7 +965,7 @@ if "top3" in st.session_state:
        # --- 4) 🥺 사쥬!!!(공유) 탭 ---
    # --- 4) 🥺 사달라고 조르기 (바이럴 공유 & 설문) 탭 ---
     with tab4:
-        st.markdown("### 📸 인스타 스토리에 박제하기")
+        st.markdown("### 📸 인스에 박제")
         st.info("아래 **'송금 요청서'**를 캡처해서 스토리에 올리고 친구/애인을 태그해보세요! 💸")
 
         row0 = top3.iloc[0]
@@ -991,49 +991,26 @@ if "top3" in st.session_state:
         except Exception:
             qr_img_b64 = ""
 
-        # 하단 QR 영역 (토스 앱 배너 스타일)
+        # 🚨 [수정 완료] 들여쓰기 100% 제거 및 img 태그 완벽하게 닫음 (/>)
         qr_block = ""
         if qr_img_b64:
-            qr_block = f"""
-            <div style="display:flex; justify-content:space-between; align-items:center; background:#f2f4f6; border-radius:16px; padding:16px; margin-top:24px;">
-                <div style="text-align:left; line-height:1.4;">
-                    <div style="font-size:13px; font-weight:800; color:#3182f6;">나도 운명 향수 찾기</div>
-                    <div style="font-size:12px; font-weight:600; color:#4e5968;">QR 스캔하고 테스트하기</div>
-                </div>
-                <img src="data:image/png;base64,{qr_img_b64}" style="width:44px; height:44px; border-radius:8px;">
-            </div>
-            """
+            qr_block = f'<div style="display:flex; justify-content:space-between; align-items:center; background:#f2f4f6; border-radius:16px; padding:16px; margin-top:24px;"><div style="text-align:left; line-height:1.4;"><div style="font-size:13px; font-weight:800; color:#3182f6;">나도 운명 향수 찾기</div><div style="font-size:12px; font-weight:600; color:#4e5968;">QR 스캔하고 테스트하기</div></div><img src="data:image/png;base64,{qr_img_b64}" style="width:44px; height:44px; border-radius:8px;" /></div>'
 
-        # 💸 토스/애플페이 스타일 UI (들여쓰기 100% 제거, 렌더링 깨짐 완벽 방지)
+        # 💸 토스/애플페이 스타일 UI
         toss_ui_html = f"""
 <div style="background-color:#f9fafb; padding:20px; border-radius:24px; display:flex; justify-content:center;">
 <div style="background:#ffffff; border-radius:24px; padding:32px 24px; text-align:center; width:100%; max-width:340px; box-shadow:0 4px 20px rgba(0,0,0,0.04); position:relative;">
-<div style="width:56px; height:56px; background:#e8f3ff; border-radius:50%; display:flex; justify-content:center; align-items:center; font-size:28px; margin:0 auto 16px auto;">
-💸
-</div>
-<div style="font-size:18px; font-weight:800; color:#191f28; line-height:1.4; margin-bottom:8px;">
-<span style="color:#3182f6;">{user_name}</span>님이<br>결제를 요청했어요
-</div>
-<div style="font-size:22px; font-weight:900; color:#191f28; margin:24px 0 6px 0;">
-{best_brand}
-</div>
-<div style="font-size:15px; font-weight:600; color:#4e5968; margin-bottom:24px;">
-{best_name}
-</div>
+<div style="width:56px; height:56px; background:#e8f3ff; border-radius:50%; display:flex; justify-content:center; align-items:center; font-size:28px; margin:0 auto 16px auto;">💸</div>
+<div style="font-size:18px; font-weight:800; color:#191f28; line-height:1.4; margin-bottom:8px;"><span style="color:#3182f6;">{user_name}</span>님이<br>결제를 요청했어요</div>
+<div style="font-size:22px; font-weight:900; color:#191f28; margin:24px 0 6px 0;">{best_brand}</div>
+<div style="font-size:15px; font-weight:600; color:#4e5968; margin-bottom:24px;">{best_name}</div>
 <div style="background:#f2f4f6; border-radius:16px; padding:16px; text-align:left; margin-bottom:24px;">
 <div style="font-size:12px; font-weight:700; color:#8b95a1; margin-bottom:6px;">요청 사유</div>
-<div style="font-size:14px; font-weight:700; color:#333d4b; line-height:1.5;">
-내 사주에 <b>{ELEMENTS_KO[weak]}</b> 기운이 부족하대요.<br>
-나 이거 안 뿌리면 진짜 큰일남 🥺 사쥬!!!
-</div>
+<div style="font-size:14px; font-weight:700; color:#333d4b; line-height:1.5;">내 사주에 <b>{ELEMENTS_KO[weak]}</b> 기운이 부족하대요.<br>나 이거 안 뿌리면 진짜 큰일남 🥺 사쥬!!!</div>
 </div>
 <div style="display:flex; flex-direction:column; gap:8px;">
-<div style="background:#3182f6; color:#ffffff; font-size:15px; font-weight:800; padding:16px; border-radius:16px;">
-쿨하게 결제해주기
-</div>
-<div style="background:#f2f4f6; color:#4e5968; font-size:15px; font-weight:700; padding:16px; border-radius:16px;">
-모른 척하기 (위험)
-</div>
+<div style="background:#3182f6; color:#ffffff; font-size:15px; font-weight:800; padding:16px; border-radius:16px;">쿨하게 결제해주기</div>
+<div style="background:#f2f4f6; color:#4e5968; font-size:15px; font-weight:700; padding:16px; border-radius:16px;">쌩까기 (위험)</div>
 </div>
 {qr_block}
 </div>
