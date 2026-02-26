@@ -226,6 +226,9 @@ def get_gender_tone(gender):
         return {"suffix": "님", "style": "깔끔하고 직관적인 톤"}
     return {"suffix": "님", "style": "중립적이고 친근한 톤"}
 
+# ================================
+# ✅ 밈카드용(개그형) 문구 사전
+# ================================
 WEAK_MEME = {
     "Wood": {
         "title": "생기 0% 🌱",
@@ -248,29 +251,67 @@ WEAK_MEME = {
         "lines": ["마음이 바짝 마름", "여유가 없고 예민해짐", "감정 정리가 어려움"],
     },
 }
-def _safe_font(size=36, bold=False):
-    """
-    ✅ app.py 위치(base_dir) 기준으로 폰트 파일을 '절대경로'로 찾는다.
-    """
-    import os
-    font_path = os.path.join(
-        base_dir, "assets", "fonts",
-        "Pretendard-Bold.ttf" if bold else "Pretendard-Regular.ttf"
-    )
 
+# ================================
+# ✅ 폰트 로더 (OTF/TTF 자동 탐색)
+#   - 폴더에 어떤 이름으로 있든 최대한 찾아줌
+# ================================
+def _find_font_path(bold: bool) -> str | None:
+    import os
+
+    font_dir = os.path.join(base_dir, "assets", "fonts")
+    if not os.path.exists(font_dir):
+        return None
+
+    files = os.listdir(font_dir)
+    # OTF/TTF만
+    font_files = [f for f in files if f.lower().endswith((".otf", ".ttf"))]
+
+    if not font_files:
+        return None
+
+    # 우선순위 후보 키워드
+    if bold:
+        priority = ["bold", "semibold", "extrabold", "black"]
+    else:
+        priority = ["regular", "medium", "light"]
+
+    # Pretendard 우선 + 굵기 키워드 우선
+    pretendard = [f for f in font_files if "pretendard" in f.lower()]
+    pool = pretendard if pretendard else font_files
+
+    # 키워드 매칭
+    for key in priority:
+        for f in pool:
+            if key in f.lower():
+                return os.path.join(font_dir, f)
+
+    # 그래도 못 찾으면 그냥 첫 번째
+    return os.path.join(font_dir, pool[0])
+
+def _safe_font(size=36, bold=False):
+    from PIL import ImageFont
+    path = _find_font_path(bold=bold)
     try:
-        return ImageFont.truetype(font_path, size)
+        if path:
+            return ImageFont.truetype(path, size)
     except Exception:
-        # 폰트 로드 실패하면(파일 없거나 손상) 기본 폰트로 떨어짐
-        return ImageFont.load_default()
+        pass
+    return ImageFont.load_default()
+
 def _draw_wrapped(draw, text, xy, font, fill, max_width, line_spacing=8):
+    from textwrap import fill as _fill
     x, y = xy
-    wrapped = textwrap.fill(text, width=max(10, int(max_width / (font.size * 0.55))))
+    # 폭에 맞게 적당히 줄바꿈
+    wrapped = _fill(str(text), width=max(10, int(max_width / (font.size * 0.55))))
     for line in wrapped.split("\n"):
         draw.text((x, y), line, font=font, fill=fill)
         y += font.size + line_spacing
     return y
 
+# ================================
+# ✅ 밈카드 PNG 생성
+# ================================
 def make_meme_card_png(
     user_name: str,
     strong: str,
@@ -281,6 +322,10 @@ def make_meme_card_png(
     hero_text: str = "",
     size=(1080, 1920),
 ):
+    from io import BytesIO
+    from PIL import Image, ImageDraw
+    import os
+
     W, H = size
     img = Image.new("RGB", size, (244, 245, 247))
     draw = ImageDraw.Draw(img)
@@ -291,20 +336,26 @@ def make_meme_card_png(
     f_body = _safe_font(34, bold=False)
     f_small = _safe_font(26, bold=False)
 
+    # 상단
     draw.text((W//2, 90), "향수 사쥬!!!", font=f_title, fill=(30, 60, 114), anchor="mm")
-    if hero_text:
-        draw.text((W//2, 160), hero_text, font=f_sub, fill=(90, 90, 90), anchor="mm")
-    else:
-        draw.text((W//2, 160), "부족한 기운을 채워주는 향수 처방", font=f_sub, fill=(90, 90, 90), anchor="mm")
+    draw.text(
+        (W//2, 160),
+        hero_text if hero_text else "부족한 기운을 채워주는 향수 처방",
+        font=f_sub,
+        fill=(90, 90, 90),
+        anchor="mm"
+    )
 
+    # 메인 카드
     pad = 70
     card_x1, card_y1 = pad, 240
     card_x2, card_y2 = W - pad, 1520
     draw.rounded_rectangle((card_x1, card_y1, card_x2, card_y2), radius=40, fill=(255, 255, 255), outline=(235, 238, 245), width=4)
 
+    # 배지
     def badge(x, y, text):
         tw = draw.textlength(text, font=f_badge)
-        bw = int(tw) + 44
+        bw = int(tw) + 120  # ✅ 한글 잘림 방지(넉넉히)
         bh = 58
         draw.rounded_rectangle((x, y, x + bw, y + bh), radius=999, fill=(250, 250, 252), outline=(225, 228, 235), width=3)
         draw.text((x + bw/2, y + bh/2), text, font=f_badge, fill=(40, 40, 40), anchor="mm")
@@ -312,6 +363,7 @@ def make_meme_card_png(
     badge(card_x1 + 40, card_y1 + 40, f"강한 기운: {ELEMENT_EMOJI[strong]} {ELEMENTS_KO[strong]}")
     badge(card_x1 + 40, card_y1 + 120, f"부족 기운: {ELEMENT_EMOJI[weak]} {ELEMENTS_KO[weak]}")
 
+    # 부족기운 밈
     meme = WEAK_MEME.get(weak, {"title": "충전 필요", "lines": ["오늘은 충전이 필요해요", "기운을 채워볼게요", ""]})
     y = card_y1 + 220
     draw.text((card_x1 + 40, y), f"📌 오늘의 상태: {meme['title']}", font=_safe_font(40, bold=True), fill=(30, 60, 114))
@@ -320,16 +372,18 @@ def make_meme_card_png(
         draw.text((card_x1 + 60, y), f"• {line}", font=f_body, fill=(60, 60, 60))
         y += 52
 
+    # 구분선
     y += 35
     draw.line((card_x1 + 40, y, card_x2 - 40, y), fill=(235, 238, 245), width=4)
     y += 35
 
+    # Top1
     draw.text((card_x1 + 40, y), "🥇 오늘의 처방 TOP 1", font=_safe_font(38, bold=True), fill=(231, 76, 60))
     y += 70
 
-    draw.text((card_x1 + 40, y), best_brand, font=_safe_font(52, bold=True), fill=(30, 60, 114))
+    draw.text((card_x1 + 40, y), str(best_brand), font=_safe_font(52, bold=True), fill=(30, 60, 114))
     y += 72
-    y = _draw_wrapped(draw, best_name, (card_x1 + 40, y), font=_safe_font(44, bold=True), fill=(50, 50, 50),
+    y = _draw_wrapped(draw, str(best_name), (card_x1 + 40, y), font=_safe_font(44, bold=True), fill=(50, 50, 50),
                       max_width=(card_x2 - card_x1 - 80), line_spacing=10)
     y += 30
 
@@ -337,6 +391,7 @@ def make_meme_card_png(
     y = _draw_wrapped(draw, why_line, (card_x1 + 40, y), font=f_body, fill=(80, 80, 80),
                       max_width=(card_x2 - card_x1 - 80), line_spacing=8)
 
+    # 하단 QR + 링크
     y_qr_top = card_y2 - 290
     draw.line((card_x1 + 40, y_qr_top - 25, card_x2 - 40, y_qr_top - 25), fill=(235, 238, 245), width=4)
 
@@ -357,7 +412,7 @@ def make_meme_card_png(
     draw.text((cta_x, y_qr_top + 10), "📲 나도 해보기", font=_safe_font(38, bold=True), fill=(30, 60, 114))
     draw.text((cta_x, y_qr_top + 70), "QR 찍거나 아래 링크로!", font=f_small, fill=(100, 100, 100))
 
-    show_link = app_link
+    show_link = str(app_link)
     if len(show_link) > 42:
         show_link = show_link[:39] + "..."
     draw.text((cta_x, y_qr_top + 115), show_link, font=_safe_font(28, bold=False), fill=(60, 60, 60))
