@@ -963,25 +963,21 @@ if "top3" in st.session_state:
         st.info("Tip) 가장 끌리는 1개만 먼저 시향해도 충분해요. ‘첫인상’이 맞는지 체크해보세요!")
 
        # --- 4) 🥺 사쥬!!!(공유) 탭 ---
-    # --- 4) 🥺 사달라고 조르기 (바이럴 공유 & 설문) 탭 ---
+   # --- 4) 🥺 사달라고 조르기 (바이럴 공유 & 설문) 탭 ---
     with tab4:
-        st.markdown("### 📸 인스타 스토리에 박제하기")
+        st.markdown("### 📸 인스타 박제")
         st.info("아래 **‘운명 향수 부적’**을 캡처해서 인스타 스토리에 올리고 친구/애인을 태그해보세요! 💳💖")
 
-        # 1등 향수 정보 가져오기
         row0 = top3.iloc[0]
         best_brand = safe_text(row0.get("Brand"))
         best_name = safe_text(row0.get("Name"))
 
-        # 밈(개그) 텍스트 가져오기
         meme_info = WEAK_MEME.get(weak, {"title": "기운 0%", "lines": ["충전이 시급합니다"]})
         meme_title = meme_info["title"]
         meme_line = meme_info["lines"][0]
 
-        # 앱 링크 (네 배포 링크)
         app_link = "https://fate-scent-mvp.streamlit.app/"
 
-        # QR 코드 생성
         qr_img_b64 = ""
         try:
             import qrcode
@@ -990,67 +986,44 @@ if "top3" in st.session_state:
             qr = qrcode.QRCode(box_size=4, border=0)
             qr.add_data(app_link)
             qr.make(fit=True)
-            img = qr.make_image(fill_color="#ff4d6d", back_color="transparent") # 핑크색 QR
+            img = qr.make_image(fill_color="#ff4d6d", back_color="transparent")
             buf = BytesIO()
             img.save(buf, format="PNG")
             qr_img_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
         except Exception:
             qr_img_b64 = ""
 
-        # 캡처 안내
         st.markdown("<div style='text-align:center; font-size:12px; color:#888; margin-bottom:10px;'>📌 <b>모바일:</b> 전원+볼륨 / <b>PC:</b> Win+Shift+S 또는 Cmd+Shift+4</div>", unsafe_allow_html=True)
 
         qr_block = ""
         if qr_img_b64:
-            qr_block = f"""
-            <div style="margin-top: 20px; display: flex; justify-content: center; align-items: center; gap: 12px; background: rgba(255,255,255,0.7); padding: 10px; border-radius: 16px;">
-                <img src="data:image/png;base64,{qr_img_b64}" style="width: 50px; height: 50px; border-radius: 8px;">
-                <div style="text-align: left; line-height: 1.2;">
-                    <div style="font-size: 11px; font-weight: 800; color: #ff4d6d;">📲 카메라로 1초 컷</div>
-                    <div style="font-size: 10px; color: #666;">내 운명의 향수 찾기</div>
-                </div>
-            </div>
-            """
+            # 🚨 <img> 태그 끝에 닫는 기호(/>) 추가 및 한 줄로 압축해서 렌더링 깨짐 완벽 방지!
+            qr_block = f"""<div style="margin-top:20px; display:flex; justify-content:center; align-items:center; gap:12px; background:rgba(255,255,255,0.7); padding:10px; border-radius:16px;"><img src="data:image/png;base64,{qr_img_b64}" style="width:50px; height:50px; border-radius:8px;" /><div style="text-align:left; line-height:1.2;"><div style="font-size:11px; font-weight:800; color:#ff4d6d;">📲 카메라로 1초 컷</div><div style="font-size:10px; color:#666;">내 운명의 향수 찾기</div></div></div>"""
 
-        # 🎨 인스타 감성 200% '키치 핑크 부적' UI (들여쓰기 없이 벽에 딱 붙임)
+        # 🚨 들여쓰기 완벽 제거. 줄바꿈 최소화해서 스트림릿 버그 차단!
         receipt_html = f"""
-<div style="background: linear-gradient(135deg, #fff0f3 0%, #fdfbfb 100%); border: 3px solid #ffb3c1; border-radius: 32px; padding: 32px 24px; text-align: center; max-width: 340px; margin: 0 auto 20px auto; box-shadow: 0 12px 30px rgba(255, 179, 193, 0.25); position: relative; overflow: hidden;">
-    <div style="font-size: 32px; margin-bottom: 8px;">💖✨</div>
-    <div style="font-size: 11px; font-weight: 800; color: #ff85a1; letter-spacing: 2px; margin-bottom: 12px;">OFFICIAL FATE SCENT</div>
-    <div style="font-size: 26px; font-weight: 900; color: #ff4d6d; margin-bottom: 24px;">이 향수 사쥬!! 🥺</div>
-
-    <div style="background: #ffffff; border-radius: 20px; padding: 22px 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.04); border: 1px solid #ffe3e8;">
-        <div style="font-size: 12px; color: #888; margin-bottom: 4px;">🚨 현재 상태: <span style="color:#e74c3c; font-weight:800;">{meme_title}</span></div>
-        <div style="font-size: 14px; font-weight: 700; color: #333; margin-bottom: 18px;">"{meme_line}"</div>
-        <hr style="border: none; border-top: 1px dashed #ffc8d2; margin: 15px 0;">
-        <div style="font-size: 12px; color: #ff85a1; font-weight: 800; margin-bottom: 6px;">🥇 운명 처방 1순위</div>
-        <div style="font-size: 22px; font-weight: 900; color: #1e3c72; line-height: 1.3;">{best_brand}</div>
-        <div style="font-size: 15px; font-weight: 700; color: #444; margin-top: 6px;">{best_name}</div>
-    </div>
-
-    <div style="margin-top: 18px; font-size: 13px; color: #555; background: rgba(255,255,255,0.6); border-radius: 14px; padding: 14px; line-height: 1.6;">
-        <b>사유:</b> 내 사주에 부족한 <b>{ELEMENTS_KO[weak]}</b> 기운 보충을 위해 긴급히 필요함.<br>
-        <span style="color: #ff4d6d; font-weight: 900; font-size: 14px;">빨리 결제 요망 💳</span>
-    </div>
-    
-    {qr_block}
+<div style="background:linear-gradient(135deg, #fff0f3 0%, #fdfbfb 100%); border:3px solid #ffb3c1; border-radius:32px; padding:32px 24px; text-align:center; max-width:340px; margin:0 auto 20px auto; box-shadow:0 12px 30px rgba(255, 179, 193, 0.25); position:relative; overflow:hidden;">
+<div style="font-size:32px; margin-bottom:8px;">💖✨</div>
+<div style="font-size:11px; font-weight:800; color:#ff85a1; letter-spacing:2px; margin-bottom:12px;">OFFICIAL FATE SCENT</div>
+<div style="font-size:26px; font-weight:900; color:#ff4d6d; margin-bottom:24px;">이 향수 사쥬!! 🥺</div>
+<div style="background:#ffffff; border-radius:20px; padding:22px 16px; box-shadow:0 8px 20px rgba(0,0,0,0.04); border:1px solid #ffe3e8;">
+<div style="font-size:12px; color:#888; margin-bottom:4px;">🚨 현재 상태: <span style="color:#e74c3c; font-weight:800;">{meme_title}</span></div>
+<div style="font-size:14px; font-weight:700; color:#333; margin-bottom:18px;">"{meme_line}"</div>
+<hr style="border:none; border-top:1px dashed #ffc8d2; margin:15px 0;">
+<div style="font-size:12px; color:#ff85a1; font-weight:800; margin-bottom:6px;">🥇 운명 처방 1순위</div>
+<div style="font-size:22px; font-weight:900; color:#1e3c72; line-height:1.3;">{best_brand}</div>
+<div style="font-size:15px; font-weight:700; color:#444; margin-top:6px;">{best_name}</div>
+</div>
+<div style="margin-top:18px; font-size:13px; color:#555; background:rgba(255,255,255,0.6); border-radius:14px; padding:14px; line-height:1.6;">
+<b>사유:</b> 내 사주에 부족한 <b>{ELEMENTS_KO[weak]}</b> 기운 보충을 위해 긴급히 필요함.<br>
+<span style="color:#ff4d6d; font-weight:900; font-size:14px;">빨리 결제 요망 💳</span>
+</div>
+{qr_block}
 </div>
 """
         st.markdown(receipt_html, unsafe_allow_html=True)
 
-        st.markdown("---")
-        st.markdown("### 💬 카톡으로 대놓고 링크 보내기")
-        st.write("오른쪽 위 **복사 버튼(📋)** 눌러서 카톡방에 바로 붙여넣기 하면 끝!")
-
-        short_text = f"나 방금 ‘향수 사쥬!!!’ 했는데…\n🚨 현재 상태: {meme_title}\n\n🥇 {best_brand} - {best_name}\n이거 안 뿌리면 나 큰일나… 사쥬!!! 🥺💳💖\n👉 {app_link}"
-        long_text = f"나 사주 봤는데, 내 운을 틔워줄 운명의 향수가 나왔어! 🥺✨\n\n[내 처방전 1순위]\n🥇 {best_brand} - {best_name}\n\n내 사주에 부족한 {ELEMENTS_KO[weak]} 기운을 채워주는 향이래.\n나 이거 사주면 진짜 평생 잘할게… 사쥬!!! 💳💖\n\n👉 너도 테스트 해봐!\n{app_link}"
-
-        st.markdown("#### 🔽 짧게(단비 떼쓰기 버전)")
-        st.code(short_text, language="text")
-        
-        st.markdown("#### 🔽 길게(애교 만렙 버전)")
-        st.code(long_text, language="text")
-
+        # 카톡 공유 싹 삭제하고 바로 설문조사로 깔끔하게 마무리!
         st.markdown("---")
         st.markdown("### 📝 서비스 개선에 참여하기")
         st.info("결과가 맘에 드셨다면 1분 설문 부탁드려요! 여러분의 피드백이 다음 업데이트에 바로 반영됩니다.")
