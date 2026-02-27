@@ -1086,8 +1086,25 @@ if "top3" in st.session_state:
 # =========================================================
 st.markdown("<br><br><br>", unsafe_allow_html=True)
 with st.expander("🔐 [관리자용] 추천 로그 데이터 확인"):
-    if os.path.exists(LOG_PATH):
-        with open(LOG_PATH, "rb") as f:
-            st.download_button("📥 누적 추천 로그 CSV 다운로드", f, file_name="recommendation_logs.csv", mime="text/csv")
-    else:
-        st.write("아직 저장된 로그가 없습니다.")
+    # 1️⃣ 비밀번호 입력칸 생성 (화면엔 *** 로 가려짐)
+    admin_pw = st.text_input("관리자 암호를 입력하세요", type="password")
+    
+    # 2️⃣ 🚨 여기에 네가 원하는 비밀번호를 설정해! (지금은 "saju1234"로 해뒀어)
+    if admin_pw == "saju1234":
+        st.success("인증 완료! 데이터를 다운로드할 수 있습니다.")
+        
+        # 3️⃣ 인증 성공 시에만 기존 다운로드 버튼 노출
+        if os.path.exists(LOG_PATH):
+            with open(LOG_PATH, "rb") as f:
+                st.download_button(
+                    label="📥 누적 추천 로그 CSV 다운로드", 
+                    data=f, 
+                    file_name="recommendation_logs.csv", 
+                    mime="text/csv"
+                )
+        else:
+            st.write("아직 저장된 로그가 없습니다.")
+            
+    # 4️⃣ 비밀번호를 틀렸을 때 경고 메시지
+    elif admin_pw != "":
+        st.error("비밀번호가 틀렸습니다. 접근 권한이 없습니다.")
