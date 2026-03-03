@@ -603,42 +603,138 @@ def save_recommendation_log(session_id, user_name, gender, birth_date, know_time
 # =========================================================
 # 6) 데이터 로드 및 추천 엔진
 # =========================================================
+import os
+import math
+import pandas as pd
+import streamlit as st
+
+# (DATA_PATH, ELEMENTS, FAMOUS_BRANDS, tags_to_keywords, keyword_hit_score 등은 기존 코드 유지)
+
+# ==============================
+# 설정값(안전/품질 조절용)
+# ==============================
+MIN_AFTER_GENDER_FILTER = 30   # 성별 필터 후 최소 보장 개수
+MIN_AFTER_BRAND_FILTER = 20    # 유명브랜드 필터 후 최소 보장 개수
+GENDER_THRESHOLDS = [0.45, 0.35, 0.25]  # 빡세면 단계적으로 완화
+DROP_DUP_KEYS = ["Brand", "Name"]       # 중복 제거 기준(안전)
+
+# ==========================================
+# 1) 데이터 로드 함수 (v2_fixed 완벽 호환)
+# ==========================================
 @st.cache_data
 def load_data():
     if not os.path.exists(DATA_PATH):
         return pd.DataFrame()
 
-    df = pd.read_csv(DATA_PATH)
+    # ✅ 인코딩 안전장치
+    try:
+        df = pd.read_csv(DATA_PATH, encoding="utf-8-sig")
+    except Exception:
+        df = pd.read_csv(DATA_PATH)
 
-    for c in ["Name", "Brand", "Notes", "Description", "matched_keywords"]:
+    text_columns = ["Name", "Brand", "Notes", "Description", "matched_keywords", "Top", "Middle", "Base", "Gender"]
+    for c in text_columns:
         if c not in df.columns:
             df[c] = ""
         df[c] = df[c].fillna("").astype(str)
 
+    # ✅ 성별 점수 컬럼(없으면 기본 0.5)
+    for c in ["Female_Score", "Male_Score"]:
+        if c not in df.columns:
+            df[c] = 0.5
+        df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0.5)
+
+    # ✅ 오행 점수(기존 로직 유지)
     for e in ELEMENTS:
         if e not in df.columns:
             df[e] = 0.0
         df[e] = pd.to_numeric(df[e], errors="coerce").fillna(0.0)
 
-    df["all_text"] = (df["Name"] + " " + df["Brand"] + " " + df["Notes"] + " " + df["matched_keywords"]).str.lower()
+    # ✅ all_text 강화 (Notes + matched + Top/Mid/Base + Gender)
+    df["all_text"] = (
+        df["Name"] + " " + df["Brand"] + " " +
+        df["Notes"] + " " + df["matched_keywords"] + " " +
+        df["Top"] + " " + df["Middle"] + " " + df["Base"] + " " +
+        df["Gender"]
+    ).str.lower().fillna("")
+
+    # ✅ 오행합 0 제거(추천 안정)
     df["element_sum"] = df[ELEMENTS].sum(axis=1)
     df = df[df["element_sum"] > 0].copy()
 
-    mask = ~df["Name"].str.lower().apply(lambda x: any(w in x for w in ["sample", "discovery", "set", "gift", "miniature"]))
-    return df[mask].reset_index(drop=True)
+    # ✅ 샘플/세트 제거
+    ban_words = ["sample", "discovery", "set", "gift", "miniature"]
+    mask = ~df["Name"].str.lower().apply(lambda x: any(w in x for w in ban_words))
+    df = df[mask].copy()
+
+    # ✅ 중복 제거(브랜드+이름 기준)
+    for c in DROP_DUP_KEYS:
+        if c not in df.columns:
+            df[c] = ""
+    df = df.drop_duplicates(subset=DROP_DUP_KEYS).reset_index(drop=True)
+
+    return df
 
 df = load_data()
 
-def recommend_perfumes(df, weakest, strongest, pref_tags, dislike_tags, brand_filter_mode):
+# ==========================================
+# 2) [신규] 유저 향수 검색 (특수문자 에러 완벽 방어)
+# ==========================================
+def find_user_perfume(df, search_text, limit=30):
+    if df.empty or not search_text or not str(search_text).strip():
+        return pd.DataFrame()
+
+    q_lower = str(search_text).strip().lower()
+
+    # ✅ 특수문자 안전(정규식 해석 금지)
+    mask_name = df["Name"].str.lower().str.contains(q_lower, regex=False, na=False)
+    mask_brand = df["Brand"].str.lower().str.contains(q_lower, regex=False, na=False)
+
+    out = df[mask_name | mask_brand].copy()
+    if out.empty:
+        return out
+
+    # ✅ out 인덱스에 맞춰 hit 점수 부여(정렬 안정)
+    out["hit_name"] = mask_name.loc[out.index].astype(int)
+    out["hit_brand"] = mask_brand.loc[out.index].astype(int)
+
+    out = out.sort_values(["hit_name", "hit_brand"], ascending=False).drop(columns=["hit_name", "hit_brand"])
+
+    return out.head(limit).reset_index(drop=True)
+
+# ==========================================
+# 3) 추천 엔진 (성별향 필터: 단계적 완화 + 안전장치)
+# ==========================================
+def _apply_gender_filter(work: pd.DataFrame, user_gender: str) -> pd.DataFrame:
+    if work.empty or user_gender not in ["남성", "여성"]:
+        return work  # 성별 무관이거나 비어있으면 원본 반환
+
+    score_col = "Male_Score" if user_gender == "남성" else "Female_Score"
+
+    # threshold 단계적으로 완화
+    for thr in GENDER_THRESHOLDS:
+        filtered = work[work[score_col] >= thr]
+        if len(filtered) >= MIN_AFTER_GENDER_FILTER:
+            return filtered.copy()
+
+    # 그래도 적으면 원본 반환(완전 고갈 방지)
+    return work
+
+def recommend_perfumes(df, weakest, strongest, pref_tags, dislike_tags, brand_filter_mode, user_gender="성별 무관"):
     if df.empty:
         return pd.DataFrame()
 
     work = df.copy()
 
+    # ✅ 성별향 필터(단계적 완화)
+    work = _apply_gender_filter(work, user_gender)
+
+    # ✅ 유명 브랜드 위주 필터
     if brand_filter_mode == "유명 브랜드 위주":
-        work = work[work["Brand"].apply(lambda b: any(f.lower() in str(b).lower() for f in FAMOUS_BRANDS))].copy()
-        if len(work) < 20:
-            work = df.copy()
+        filtered = work[work["Brand"].apply(lambda b: any(f.lower() in str(b).lower() for f in FAMOUS_BRANDS))]
+        if len(filtered) >= MIN_AFTER_BRAND_FILTER:
+            work = filtered.copy()
+        # 너무 적으면 원본(work) 그대로 유지
 
     pref_keywords = tags_to_keywords(pref_tags)
     dislike_keywords = tags_to_keywords(dislike_tags)
@@ -646,27 +742,31 @@ def recommend_perfumes(df, weakest, strongest, pref_tags, dislike_tags, brand_fi
 
     rows = []
     for _, row in work.iterrows():
-        text = row["all_text"]
+        text = row.get("all_text", "")
         dislike_score = keyword_hit_score(text, dislike_keywords)
         pref_score = keyword_hit_score(text, pref_keywords)
-        vec = [float(row[e]) for e in ELEMENTS]
+        vec = [float(row.get(e, 0.0)) for e in ELEMENTS]
 
         denom = math.sqrt(sum(t*t for t in target)) * math.sqrt(sum(v*v for v in vec))
         sim = sum(t * v for t, v in zip(target, vec)) / denom if denom > 0 else 0.0
 
         brand_bonus = 0.15 if any(b.lower() in str(row.get("Brand", "")).lower() for b in FAMOUS_BRANDS) else 0.0
+
         final_score = (0.55 * sim) + (0.20 * float(row.get(weakest, 0.0))) + (0.18 * pref_score) - (0.20 * dislike_score) + brand_bonus
         if dislike_score >= 0.4:
             final_score -= 0.5
 
         r = row.to_dict()
-        r.update({"score": final_score, f"{weakest}_fill": float(row.get(weakest, 0.0))})
+        r.update({"score": float(final_score), f"{weakest}_fill": float(row.get(weakest, 0.0))})
         rows.append(r)
 
-    out = pd.DataFrame(rows).sort_values("score", ascending=False).drop_duplicates(subset=["Name"]).reset_index(drop=True)
+    out = (
+        pd.DataFrame(rows)
+        .sort_values("score", ascending=False)
+        .drop_duplicates(subset=DROP_DUP_KEYS)
+        .reset_index(drop=True)
+    )
     return out
-
-
 # =========================================================
 # 7) 메인 화면 UI
 # =========================================================
