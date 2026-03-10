@@ -153,21 +153,29 @@ export default function PhotoShareOverlay({
             const handles = document.querySelectorAll('.rotation-handle');
             handles.forEach((h: any) => h.style.display = 'none');
 
+            // Force a small delay to ensure DOM updates are applied
+            await new Promise(resolve => setTimeout(resolve, 50));
+
             const dataUrl = await toPng(captureRef.current, {
-                cacheBust: true,
-                pixelRatio: 2
+                pixelRatio: 2,
             });
 
+            // Restore handles
             handles.forEach((h: any) => h.style.display = '');
 
             const link = document.createElement("a");
             const namePrefix = additionalData.type === "compatibility" ? "궁합" : "추천";
-            link.download = `fatescent_${namePrefix}_${userInfo.user_name}.png`;
+            const filename = `fatescent_${namePrefix}_${userInfo.user_name}.png`;
+
+            link.download = filename;
             link.href = dataUrl;
+            link.target = "_blank"; // Helpful for iOS Safari
+            document.body.appendChild(link);
             link.click();
-        } catch (err) {
+            document.body.removeChild(link);
+        } catch (err: any) {
             console.error(err);
-            alert("이미지 저장 중 오류가 발생했습니다.");
+            alert(`이미지 저장 중 오류가 발생했습니다: ${err?.message || err}`);
         }
     };
 
@@ -213,7 +221,7 @@ export default function PhotoShareOverlay({
                         {/* Capture Target Area */}
                         <div ref={captureRef} className="w-full h-full relative flex flex-col bg-black">
                             {/* Background Image */}
-                            <img src={bgImage} alt="Background" className="absolute inset-0 w-full h-full object-cover z-0" crossOrigin="anonymous" />
+                            <img src={bgImage} alt="Background" className="absolute inset-0 w-full h-full object-cover z-0" />
                             {/* Subtler gradient just for readability at the top and bottom */}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 z-0 pointer-events-none"></div>
 

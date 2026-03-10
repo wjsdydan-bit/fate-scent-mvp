@@ -90,14 +90,36 @@ export default function RecommendationResult({ data, userInfo, onReset }: any) {
     const handleShareCapture = async () => {
         if (!shareRef.current) return;
         try {
-            const html2canvas = (await import("html2canvas")).default;
-            const canvas = await html2canvas(shareRef.current, { scale: 2, backgroundColor: null, useCORS: true });
+            const { toPng } = await import("html-to-image");
+
+            // Allow DOM to settle
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            const filter = (node: HTMLElement) => {
+                if (node.classList && node.classList.contains('share-favicon')) {
+                    return false;
+                }
+                return true;
+            };
+
+            const dataUrl = await toPng(shareRef.current, {
+                pixelRatio: 2,
+                backgroundColor: "#ffffff",
+                filter: filter as any
+            });
+
             const link = document.createElement("a");
-            link.download = `fatescent_${userInfo?.user_name || "결과"}.png`;
-            link.href = canvas.toDataURL("image/png");
+            const filename = `fatescent_${userInfo?.user_name || "결과"}.png`;
+
+            link.download = filename;
+            link.href = dataUrl;
+            link.target = "_blank"; // Helpful for iOS Safari
+            document.body.appendChild(link);
             link.click();
-        } catch {
-            alert("캡쳐 기능에 문제가 생겼어요. 스크린샷으로 저장해주세요!");
+            document.body.removeChild(link);
+        } catch (err: any) {
+            console.error(err);
+            alert(`캡쳐 중 오류가 발생했습니다: ${err?.message || err}`);
         }
     };
 
@@ -342,7 +364,7 @@ export default function RecommendationResult({ data, userInfo, onReset }: any) {
                                     <span className="text-orange-500 font-extrabold text-xl">X</span>
                                     <div className="flex flex-col items-center max-w-[100px]">
                                         {bestPerfume.image_url ? (
-                                            <img src={bestPerfume.image_url} alt={bestPerfume.name} className="w-14 h-14 object-contain bg-white border p-1 rounded-full shadow-sm mb-2" />
+                                            <img src={bestPerfume.image_url} alt={bestPerfume.name} crossOrigin="anonymous" className="w-14 h-14 object-contain bg-white border p-1 rounded-full shadow-sm mb-2" />
                                         ) : (
                                             <span className="text-3xl bg-white border p-3 rounded-full shadow-sm mb-2 aspect-square flex items-center justify-center">🧴</span>
                                         )}
@@ -350,7 +372,7 @@ export default function RecommendationResult({ data, userInfo, onReset }: any) {
                                             <img
                                                 src={`https://www.google.com/s2/favicons?domain=${(bestPerfume.Brand || bestPerfume.brand || "").toLowerCase().replace(/\s+/g, '')}.com&sz=128`}
                                                 onError={(e) => e.currentTarget.style.display = 'none'}
-                                                className="w-3.5 h-3.5 rounded-full shadow-sm object-cover bg-white"
+                                                className="w-3.5 h-3.5 rounded-full shadow-sm object-cover bg-white share-favicon"
                                                 alt=""
                                             />
                                             <span className="text-[10px] font-bold text-slate-700 text-center leading-tight truncate">

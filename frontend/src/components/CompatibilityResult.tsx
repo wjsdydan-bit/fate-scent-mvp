@@ -81,14 +81,28 @@ export default function CompatibilityResult({ data, userInfo, onNext, onReset }:
     const handleCapture = async () => {
         if (!captureRef.current) return;
         try {
-            const html2canvas = (await import("html2canvas")).default;
-            const canvas = await html2canvas(captureRef.current, { scale: 2, backgroundColor: "#f8fafc", useCORS: true });
+            const { toPng } = await import("html-to-image");
+
+            // Allow DOM to settle
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            const dataUrl = await toPng(captureRef.current, {
+                pixelRatio: 2,
+                backgroundColor: "#f8fafc"
+            });
+
             const link = document.createElement("a");
-            link.download = `fatescent_궁합결과_${userInfo?.user_name || "결과"}.png`;
-            link.href = canvas.toDataURL("image/png");
+            const filename = `fatescent_궁합결과_${userInfo?.user_name || "결과"}.png`;
+
+            link.download = filename;
+            link.href = dataUrl;
+            link.target = "_blank"; // Helpful for iOS Safari
+            document.body.appendChild(link);
             link.click();
-        } catch {
-            alert("캡쳐 기능을 사용하려면 페이지를 새로고침 후 다시 시도해주세요.");
+            document.body.removeChild(link);
+        } catch (err: any) {
+            console.error(err);
+            alert(`캡쳐 중 오류가 발생했습니다: ${err?.message || err}`);
         }
     };
 
@@ -120,7 +134,7 @@ export default function CompatibilityResult({ data, userInfo, onNext, onReset }:
                         <span className="text-orange-500 font-extrabold text-2xl">X</span>
                         <div className="flex flex-col items-center">
                             {perfume_details.image_url ? (
-                                <img src={perfume_details.image_url} alt={perfume_details.name} className="w-16 h-16 object-contain bg-white border p-1 rounded-full shadow-sm mb-2" />
+                                <img src={perfume_details.image_url} alt={perfume_details.name} crossOrigin="anonymous" className="w-16 h-16 object-contain bg-white border p-1 rounded-full shadow-sm mb-2" />
                             ) : (
                                 <span className="text-4xl bg-white border p-3 rounded-full shadow-sm mb-2 aspect-square flex items-center justify-center">🧴</span>
                             )}
