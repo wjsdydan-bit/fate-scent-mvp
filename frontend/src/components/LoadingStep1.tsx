@@ -3,15 +3,17 @@
 import { useState, useEffect } from "react";
 
 export default function LoadingStep1() {
-    const [stepText, setStepText] = useState("만세력을 확인하고 있어요…");
+    const [stepText, setStepText] = useState("만세력을 탈탈 터는 중… 📖");
     const [displayText, setDisplayText] = useState("");
 
     useEffect(() => {
         const steps = [
-            { time: 2000, text: "오행 에너지를 분석하고 있어요…" },
-            { time: 4500, text: "향수 노트를 찾고 있어요…" },
-            { time: 7000, text: "케미 점수를 계산하고 있어요…" },
-            { time: 10000, text: "거의 다 왔어요! 마무리 중…" },
+            { time: 1500, text: "타고난 오행 기운 분석 중… 🔍" },
+            { time: 3000, text: "부족한 기운 영끌하는 중… 💨" },
+            { time: 4500, text: "향수 노트에 사주 비비는 중… 🧪" },
+            { time: 6000, text: "운명의 케미 점수 매기는 중… 🎯" },
+            { time: 8000, text: "거의 다 왔어요! 영혼을 갈아넣는 중… 🔥" },
+            { time: 10000, text: "너무 열심히 하고 있어서 금방 돼요! 제발! 🙏" },
         ];
         const timers = steps.map(s => setTimeout(() => setStepText(s.text), s.time));
         return () => timers.forEach(clearTimeout);

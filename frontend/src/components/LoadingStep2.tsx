@@ -3,14 +3,17 @@
 import { useState, useEffect } from "react";
 
 export default function LoadingStep2() {
-    const [stepText, setStepText] = useState("조건에 맞는 향수를 찾고 있어요…");
+    const [stepText, setStepText] = useState("사주팔자 스캔 완료! 👀");
     const [displayText, setDisplayText] = useState("");
 
     useEffect(() => {
         const steps = [
-            { time: 2500, text: "어울리는 향수를 고르고 있어요…" },
-            { time: 5500, text: "사주와 향수 궁합을 맞추고 있어요…" },
-            { time: 9000, text: "마무리 정리 중이에요…" },
+            { time: 1500, text: "넘치는 기운 덜어낼 향수 찾는 중… 🔎" },
+            { time: 3000, text: "부족한 매력 채워줄 노트 고르는 중… 🧪" },
+            { time: 4500, text: "운명적인 향수 리스트업 중… 📝" },
+            { time: 6000, text: "최고의 궁합 3대장 선발 중… 🏆" },
+            { time: 8000, text: "분석 결과를 정성껏 쓰는 중… ✍️" },
+            { time: 10000, text: "타자 진짜 빨리 치고 있어요! 조금만요! 💦" },
         ];
         const timers = steps.map(s => setTimeout(() => setStepText(s.text), s.time));
         return () => timers.forEach(clearTimeout);
