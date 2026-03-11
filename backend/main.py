@@ -370,7 +370,7 @@ async def generate_compatibility_result(
 - 0~10점: '당장 갖다 버리세요 🗑️'",
   "good_reasons": ["잘 맞는 이유(30자 이내)"] * {good_count},
   "bad_reasons": ["아쉬운 점(30자 이내)"] * {bad_count},
-  "perf_element_summary": "이 향수의 5가지 오행에 대해 매칭된 향수 노트를 **모두 이해하기 쉬운 한국어로 번역**해서 설명하고, 이 향수가 유저 사주상 부족한 기운({weak_ko})을 어떻게 보완하거나 넘치는 기운({strong_ko})을 악화시키는지 명확하게 설명할 것 (반드시 6~8줄 분량)",
+  "perf_element_summary": "이 향수의 5가지 오행에 대해 매칭된 향수 노트를 **모두 이해하기 쉬운 한국어로 번역**해서 설명하고, 이 향수가 유저 사주상 부족한 기운({weak_ko})을 어떻게 보완하거나 넘치는 기운({strong_ko})을 악화시키는지 명확하게 설명할 것 (반드시 3~4줄 분량 내외로 핵심만)",
   "compatibility_detail": "궁합 점수에 대한 종합 설명 (3~4문장. 왜 이 점수인지, 어떤 상황에 쓰면 좋을지)"
 }}
 """.strip()
@@ -383,7 +383,7 @@ async def generate_compatibility_result(
                 {"role": "user", "content": prompt}
             ],
             temperature=0.8,
-            max_tokens=900
+            max_tokens=500
         )
         raw = resp.choices[0].message.content if resp and resp.choices else ""
         raw = _strip_code_fences(raw)
@@ -528,19 +528,19 @@ async def generate_comprehensive_reading_json(
 [출력 JSON 형식]
 {{
   "hero_title": "짧고 강렬한 한 줄 정의 (15자 이내, 임팩트 있고 펀치감 있게. 예: '🔥 폭풍 속 불꽃', '💧 고요한 심해의 용', '🌳 부러지지 않는 대나무')",
-  "summary": "핵심 요약: 사주 특성 + {interests_str} 측면에서 오행 불균형이 어떻게 작용하는지 + 부족한 기운을 향수로 어떻게 채워야 하는지 (반드시 6~7줄 이상 상세하고 자연스럽게 작성)",
+  "summary": "핵심 요약: 사주 특성 + {interests_str} 측면에서 오행 불균형이 어떻게 작용하는지 + 부족한 기운을 향수로 어떻게 채워야 하는지 (반드시 4~5줄 이내로 자연스럽게 작성)",
   "saju_analysis": {{
-    "overview": "★중요★ 사주 종합 평가. 유저의 사주를 기반으로 한 명리학적 성격, 두뇌/기질, 인간관계 특징 등을 아주 디테일하게 풀이한 성격/인생 명세서 (절대 짧게 쓰지 말고, 반드시 10줄 이상 아주 길고 구체적으로 작성할 것)",
-    "advantages": "{strong_ko} 기운의 장점 (2~3문장)",
-    "disadvantages": "과할 때 주의점 (2~3문장)",
-    "weakness_signals": "{weak_ko} 부족 신호 (2~3문장)",
-    "balance_effect": "'오행 보완' 후 실제 변화 (3~4문장, 상세하게)",
-    "perfume_effect": "향수를 쓸 때 감정·신체·운에 미치는 효과를 아주 상세하게 (반드시 4~5문장 이상)"
+    "overview": "★중요★ 사주 종합 평가. 유저의 사주를 기반으로 한 명리학적 성격, 두뇌/기질, 인간관계 특징 등을 핵심 위주로 디테일하게 풀이한 성격/인생 명세서 (반드시 5~6줄 이내로 작성할 것)",
+    "advantages": "{strong_ko} 기운의 장점 (1~2문장)",
+    "disadvantages": "과할 때 주의점 (1~2문장)",
+    "weakness_signals": "{weak_ko} 부족 신호 (1~2문장)",
+    "balance_effect": "'오행 보완' 후 실제 변화 (2~3문장)",
+    "perfume_effect": "향수를 쓸 때 감정·신체·운에 미치는 효과 (반드시 2~3문장 이내)"
   }},
   "luck_analysis": [
     {{
       "luck_name": "선택한 각각의 운 이름 (예: 연애운)",
-      "detail": "해당 운에 대해서만 집중적으로 상세히 풀이. 향수와 오행을 연관지어서 어떻게 이 운이 좋아질 수 있는지 어드바이스 (무조건 5~6문장 이상, 매우 디테일하게)"
+      "detail": "해당 운에 대해서만 집중적으로 핵심만 풀이. 향수와 오행을 연관지어서 어떻게 이 운이 좋아질 수 있는지 어드바이스 (무조건 2~3문장 이내, 디테일하게)"
     }}
   ],
   "perfumes": [
@@ -548,7 +548,7 @@ async def generate_comprehensive_reading_json(
       "top": "첫번째 향수의 탑 노트 원본 향료 이름(예: 레몬, 베르가못)만 한국어로 번역. (절대 나무, 흙 같은 오행 기운을 적지 말 것)",
       "middle": "미들 노트 원본 향료 이름만 한국어로 번역. (절대 명리학적 오행이나 기운을 적지 말 것)",
       "base": "베이스 노트 원본 향료 이름만 한국어로 번역. (절대 목,화,토,금,수 같은 오행 기운이나 에너지를 적지 말고 머스크, 바닐라 등 실제 향료 이름만 적을 것)",
-      "element_match_reason": "위 [추천 향수 Top3 실제 오행 데이터]에서 제공된 '주 기운'을 반드시 그대로 인용해서 설명할 것. 임의로 오행을 과장하거나 지어내지 말 것. 부족한 기운({weak_ko}) 보완 및 사주 밸런스와 왜 일치하는지를 7~8줄 분량으로 상세하게 설명 (반드시 길고 충실하게 작성)"
+      "element_match_reason": "위 [추천 향수 Top3 실제 오행 데이터]에서 제공된 '주 기운'을 반드시 그대로 인용해서 설명할 것. 임의로 오행을 과장하거나 지어내지 말 것. 부족한 기운({weak_ko}) 보완 및 사주 밸런스와 왜 일치하는지를 3~4줄 분량 내외로 핵심만 명확하게 설명"
     }},
     {{ "top": "두번째 향수의 탑 ...", "middle": "...", "base": "...", "element_match_reason": "..." }},
     {{ "top": "세번째 향수의 탑 ...", "middle": "...", "base": "...", "element_match_reason": "..." }}
@@ -564,7 +564,7 @@ async def generate_comprehensive_reading_json(
                 {"role": "user", "content": prompt}
             ],
             temperature=0.75,
-            max_tokens=2000
+            max_tokens=1200
 
         )
         raw = resp.choices[0].message.content if resp and resp.choices else ""
