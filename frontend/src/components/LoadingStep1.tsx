@@ -4,16 +4,32 @@ import { useState, useEffect } from "react";
 
 export default function LoadingStep1() {
     const [stepText, setStepText] = useState("만세력을 확인하고 있어요…");
+    const [displayText, setDisplayText] = useState("");
 
     useEffect(() => {
         const steps = [
-            { time: 1500, text: "오행 에너지를 분석하고 있어요…" },
-            { time: 3500, text: "향수 노트를 찾고 있어요…" },
-            { time: 5500, text: "케미 점수를 계산하고 있어요…" },
+            { time: 2000, text: "오행 에너지를 분석하고 있어요…" },
+            { time: 4500, text: "향수 노트를 찾고 있어요…" },
+            { time: 7000, text: "케미 점수를 계산하고 있어요…" },
+            { time: 10000, text: "거의 다 왔어요! 마무리 중…" },
         ];
         const timers = steps.map(s => setTimeout(() => setStepText(s.text), s.time));
         return () => timers.forEach(clearTimeout);
     }, []);
+
+    useEffect(() => {
+        let i = 0;
+        setDisplayText("");
+        const interval = setInterval(() => {
+            if (i < stepText.length) {
+                setDisplayText(stepText.slice(0, i + 1));
+                i++;
+            } else {
+                clearInterval(interval);
+            }
+        }, 60);
+        return () => clearInterval(interval);
+    }, [stepText]);
 
     return (
         <div className="w-full flex flex-col items-center justify-center min-h-[60vh] space-y-6 text-center">
@@ -24,7 +40,8 @@ export default function LoadingStep1() {
 
             <div className="space-y-2">
                 <h2 className="text-xl font-extrabold text-slate-900 tracking-tight text-center">
-                    {stepText}
+                    {displayText}
+                    <span className="animate-pulse text-orange-500 ml-0.5">|</span>
                 </h2>
                 <p className="text-sm text-slate-500 mt-1 text-center">⚠️ 새로고침하지 마세요 🙏</p>
             </div>

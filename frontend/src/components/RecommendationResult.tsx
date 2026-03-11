@@ -80,8 +80,8 @@ export default function RecommendationResult({ data, userInfo, onReset }: any) {
     };
 
     const bestPerfume = top3[0] || {};
-    const weakElement = userInfo?.saju_data?.weakest || "";
-    const strongElement = userInfo?.saju_data?.strongest || "";
+    const weakElement = userInfo?.saju_data?.weakest || reading_result?.saju_data?.weakest || "";
+    const strongElement = userInfo?.saju_data?.strongest || reading_result?.saju_data?.strongest || "";
     const weakElementKo = ELEMENTS_KO[weakElement] || weakElement;
     const strongElementKo = ELEMENTS_KO[strongElement] || strongElement;
     const genderEmoji = userInfo?.gender === "여성" ? "🙋‍♀️" : "🙋‍♂️";

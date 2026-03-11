@@ -48,7 +48,7 @@ export default function RecommendationForm({ userInfo, onNext, onReset }: any) {
 
                         <div className="space-y-4">
                             <Label className="font-bold text-slate-800 text-base border-b border-slate-100 pb-2 block text-center">
-                                선호하는 향기 (복수 선택)
+                                선호하는 향
                             </Label>
                             <div className="flex flex-wrap gap-2">
                                 {TAG_OPTIONS.map(tag => (
@@ -72,7 +72,7 @@ export default function RecommendationForm({ userInfo, onNext, onReset }: any) {
 
                         <div className="space-y-4">
                             <Label className="font-bold text-slate-800 text-base border-b border-slate-100 pb-2 block text-center">
-                                피하고 싶은 향기
+                                피하고 싶은 향
                             </Label>
                             <div className="flex flex-wrap gap-2">
                                 {TAG_OPTIONS.filter(tag => !prefTags.includes(tag)).map(tag => (
@@ -92,7 +92,7 @@ export default function RecommendationForm({ userInfo, onNext, onReset }: any) {
                         </div>
 
                         <div className="space-y-4 pt-2">
-                            <Label className="font-bold text-slate-800 text-base block border-b border-slate-100 pb-2 text-center">가장 끌어올리고 싶은 운 (복수 선택)</Label>
+                            <Label className="font-bold text-slate-800 text-base block border-b border-slate-100 pb-2 text-center">가장 끌어올리고 싶은 운</Label>
                             <div className="flex flex-wrap gap-2">
                                 {INTEREST_OPTIONS.map(interest => (
                                     <button

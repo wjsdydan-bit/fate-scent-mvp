@@ -119,6 +119,7 @@ def load_data():
     for c in drop_keys:
         if c not in temp_df.columns:
             temp_df[c] = ""
+    global df
     df = temp_df.drop_duplicates(subset=drop_keys).reset_index(drop=True)
     print(f"Loaded {len(df)} perfumes successfully.")
 
@@ -356,10 +357,17 @@ async def generate_compatibility_result(
 [출력 JSON 형식]
 {{
   "one_liner": "유저의 오행과 향수의 오행이 만나면 어떻게 되는지 유쾌하고 직관적으로 표현 (20자 이내. 예: '물과 불이 만나 소화됨💨', '나무에 물 줬더니 대나무 됨🎋', '쇠가 쇠를 만나 칼 됨🗡️')",
-  "score_comment": "궁합 점수가 {score}점이라는 점을 **반드시** 명심하고, 다음 기준에 따라 리액션을 작성해 (15자 이내): 
-- 만약 {score}점이 80점 이상이면 무조건 극찬 (예: '이거 안 뿌리면 손해 🌈', '인생 향수 발견! 🎉')
-- 만약 {score}점이 60점~79점 사이면 평범한 반응 (예: '나쁘진 않은데… 흠 🤔', '무난하게 쓰기 좋음 🌿')
-- 만약 {score}점이 59점 이하면 부정적 반응 (예: '이건 좀 아닌 듯 🚨', '당장 버려 🗑️', '화장실 방향제 낙점 🚽')",
+  "score_comment": "궁합 점수가 {score}점이라는 점을 **반드시** 명심하고, 다음 10개의 점수 구간에 맞춰 15자 이내의 리액션을 작성해:
+- 91~100점: '운명 그 자체! 평생 안고 가세요 💯'
+- 81~90점: '최상의 바이브! 매일 뿌려도 좋아요 🌟'
+- 71~80점: '기분 좋은 예감! 자주 손이 갈 거예요 ✨'
+- 61~70점: '나쁘지 않은 호환성! 무난하게 쓰기 좋음 🌿'
+- 51~60점: '가끔 기분 전환용으로만 쓰세요 🤔'
+- 41~50점: '글쎄요 코에는 안 맞을 확률이 높음 🤷'
+- 31~40점: '차라리 안 뿌리는 게 나을지도 🙅'
+- 21~30점: '이건 좀 아닌 듯! 방향제로 쓰세요 🚨'
+- 11~20점: '불협화음 폭발! 옆 사람도 피할 향 🌪️'
+- 0~10점: '당장 갖다 버리세요 🗑️'",
   "good_reasons": ["잘 맞는 이유(30자 이내)"] * {good_count},
   "bad_reasons": ["아쉬운 점(30자 이내)"] * {bad_count},
   "perf_element_summary": "이 향수의 5가지 오행에 대해 매칭된 향수 노트를 **모두 이해하기 쉬운 한국어로 번역**해서 설명하고, 이 향수가 유저 사주상 부족한 기운({weak_ko})을 어떻게 보완하거나 넘치는 기운({strong_ko})을 악화시키는지 명확하게 설명할 것 (반드시 6~8줄 분량)",
@@ -596,6 +604,21 @@ class CompatResponse(BaseModel):
     compatibility_score: int
     compatibility_result: dict
 
+class RecommendDirectRequest(BaseModel):
+    user_name: str
+    gender: str
+    year: int
+    month: int
+    day: int
+    hour: Optional[int] = None
+    minute: Optional[int] = None
+    know_time: bool
+    pref_tags: List[str]
+    dislike_tags: List[str]
+    gender_filter: str
+    brand_filter_mode: str
+    interests: List[str]
+
 
 image_cache = {}
 def _sync_fetch_image(brand: str, name: str) -> Optional[str]:
@@ -773,6 +796,97 @@ async def get_recommendations(req: RecommendRequest):
             p_dict["middle_ko"] = ai_data.get("middle", p_dict.get("middle_ko"))
             p_dict["base_ko"] = ai_data.get("base", p_dict.get("base_ko"))
             p_dict["element_match_reason"] = ai_data.get("element_match_reason", "")
+
+    return RecommendResponse(
+        top3=top3_list,
+        reading_result=reading
+    )
+
+@app.post("/api/recommend_direct", response_model=RecommendResponse)
+async def get_direct_recommendations(req: RecommendDirectRequest):
+    # Calculate user saju
+    saju_res = get_real_saju_elements(req.year, req.month, req.day, req.hour if not req.know_time else None, req.minute if not req.know_time else None)
+    if not saju_res:
+        raise HTTPException(status_code=400, detail="Invalid date for Saju calculation")
+    
+    weak = saju_res["weakest"]
+    strong = saju_res["strongest"]
+    saju_name = saju_res["saju_name"]
+    know_time = req.know_time
+
+    rec_df = recommend_perfumes(
+        df, weak, strong, req.pref_tags, req.dislike_tags, 
+        req.brand_filter_mode, req.gender_filter
+    )
+    
+    if rec_df.empty or len(rec_df) < 3:
+        raise HTTPException(status_code=400, detail="Not enough perfumes found. Please ease the filters.")
+         
+    top3 = rec_df.head(3).copy()
+    
+    # Map dataframe outputs to simple dicts for the response
+    top3_list = []
+    for _, row in top3.iterrows():
+        perf_dict = row.to_dict()
+        perf_dict["badges"] = [f"{ELEMENT_EMOJI[e]} {ELEMENTS_KO[e]}" for e in ELEMENTS if float(perf_dict.get(e, 0.0)) > 0.15][:3]
+        perf_dict["notes_ko"] = safe_text(perf_dict.get("Notes", ""))
+        perf_dict["top_ko"] = safe_text(perf_dict.get("Top", ""))
+        perf_dict["middle_ko"] = safe_text(perf_dict.get("Middle", ""))
+        perf_dict["base_ko"] = safe_text(perf_dict.get("Base", ""))
+        
+        def notes_to_element_hints(notes_str):
+            if not notes_str:
+                return []
+            hints = []
+            for elem, kws in ELEMENT_KEYWORDS.items():
+                matched = [kw for kw in kws if kw in notes_str.lower()]
+                if matched:
+                    hints.append(f"{ELEMENT_EMOJI[elem]} {ELEMENTS_KO[elem]} ({', '.join(matched[:2])})")
+            return hints
+        
+        perf_dict["notes_element_hints"] = notes_to_element_hints(perf_dict["notes_ko"])
+        top3_list.append(perf_dict)
+
+    # === PARALLEL EXECUTION: images + AI reading simultaneously ===
+    image_tasks = [
+        get_perfume_image_url(
+            p_dict.get("Brand", ""), 
+            p_dict.get("Name", ""), 
+            str(p_dict.get("Image URL", ""))
+        )
+        for p_dict in top3_list
+    ]
+    reading_task = generate_comprehensive_reading_json(
+        user_name=req.user_name,
+        gender=req.gender,
+        saju_name=saju_name,
+        strongest=strong,
+        weakest=weak,
+        top3_df=top3,
+        know_time=know_time,
+        interests=req.interests
+    )
+
+    # Run all 4 tasks (3 images + 1 AI) concurrently
+    results = await asyncio.gather(*image_tasks, reading_task)
+    
+    # Unpack results: first 3 are images, last is the AI reading
+    for i, p_dict in enumerate(top3_list):
+        p_dict["image_url"] = results[i]
+    reading = results[-1]
+
+    ai_perfumes = reading.get("perfumes", [])
+    for i, p_dict in enumerate(top3_list):
+        if i < len(ai_perfumes):
+            ai_data = ai_perfumes[i]
+            p_dict["top_ko"] = ai_data.get("top", p_dict.get("top_ko"))
+            p_dict["base_ko"] = ai_data.get("base", p_dict.get("base_ko"))
+            p_dict["element_match_reason"] = ai_data.get("element_match_reason", "")
+
+    reading["saju_data"] = {
+        "strongest": strong,
+        "weakest": weak
+    }
 
     return RecommendResponse(
         top3=top3_list,
