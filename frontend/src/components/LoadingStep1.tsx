@@ -9,7 +9,7 @@ export default function LoadingStep1() {
         const steps = [
             { time: 1500, text: "오행 에너지를 분석하고 있어요…" },
             { time: 3500, text: "향수 노트를 찾고 있어요…" },
-            { time: 5500, text: "궁합을 계산하고 있어요…" },
+            { time: 5500, text: "케미 점수를 계산하고 있어요…" },
         ];
         const timers = steps.map(s => setTimeout(() => setStepText(s.text), s.time));
         return () => timers.forEach(clearTimeout);
