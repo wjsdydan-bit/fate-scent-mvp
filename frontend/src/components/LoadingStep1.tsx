@@ -13,7 +13,7 @@ export default function LoadingStep1() {
             { time: 4500, text: "향수 노트에 사주 비비는 중… 🧪" },
             { time: 6000, text: "운명의 케미 점수 매기는 중… 🎯" },
             { time: 8000, text: "거의 다 왔어요! 영혼을 갈아넣는 중… 🔥" },
-            { time: 10000, text: "너무 열심히 하고 있어서 금방 돼요! 제발! 🙏" },
+            { time: 10000, text: "금방 돼요! 제발...🙏" },
         ];
         const timers = steps.map(s => setTimeout(() => setStepText(s.text), s.time));
         return () => timers.forEach(clearTimeout);
