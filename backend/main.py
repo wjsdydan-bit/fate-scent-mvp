@@ -53,11 +53,30 @@ TAG_TO_KEYWORDS = {
 }
 
 ELEMENT_KEYWORDS = {
-    "Wood": ["green", "herbal", "leafy", "tea", "vetiver", "pine", "grass"],
-    "Fire": ["citrus", "spicy", "warm spicy", "pepper", "ginger", "cinnamon", "rose"],
-    "Earth": ["woody", "musk", "amber", "powdery", "patchouli", "vanilla", "oud"],
-    "Metal": ["aldehyde", "mineral", "mint", "cool", "soapy", "white floral"],
-    "Water": ["aquatic", "marine", "sea", "watery", "ozonic", "salty"]
+    "Wood": [
+        "bergamot", "lemon", "mandarin", "grapefruit", "orange", 
+        "petitgrain", "green", "galbanum", "bamboo", "tea", "cypress",
+        "apple", "fig", "neroli", "citrus"
+    ],
+    "Fire": [
+        "jasmine", "rose", "ylang", "tuberose", "blossom", "peony", 
+        "geranium", "lily", "saffron", "leather", "tobacco", "incense", 
+        "pepper", "cinnamon", "carnation", "magnolia", "freesia", "orchid", "spicy"
+    ],
+    "Earth": [
+        "vanilla", "tonka", "patchouli", "iris", "benzoin", "peach", 
+        "pear", "heliotrope", "violet", "oakmoss", "vetiver", "sandalwood", 
+        "chocolate", "caramel", "honey", "almond", "plum", "amber", "sweet"
+    ],
+    "Metal": [
+        "white musk", "lavender", "cardamom", "nutmeg", "coriander", 
+        "ginger", "mint", "aldehyde", "cedar", "metallic", 
+        "eucalyptus", "rosemary", "juniper", "sage", "pine", "herb"
+    ],
+    "Water": [
+        "musk", "ambergris", "sea", "marine", "aquatic", "salt", 
+        "seaweed", "water", "cucumber", "melon", "calone", "castoreum", "civet"
+    ]
 }
 
 FAMOUS_BRANDS = [
@@ -253,16 +272,33 @@ async def get_perfume_notes_via_ai(brand: str, name: str) -> str:
         return ""
 
 def compute_perfume_element_vector(notes_text: str) -> dict[str, float]:
-    t = notes_text.lower()
-    vec: dict[str, float] = {}
-    for elem, kws in ELEMENT_KEYWORDS.items():
-        hits = sum(1 for kw in kws if kw in t)
-        vec[elem] = float(hits)
-    total = sum(vec.values())
-    if total > 0:
-        return {k: round(float(v / total), 3) for k, v in vec.items()}
-    else:
-        return {k: 0.0 for k in ELEMENTS}
+    scores = {"Wood": 0.0, "Fire": 0.0, "Earth": 0.0, "Metal": 0.0, "Water": 0.0}
+    
+    if not isinstance(notes_text, str) or not notes_text.strip():
+        return scores
+
+    flattened_keywords = []
+    for element, keywords in ELEMENT_KEYWORDS.items():
+        for kw in keywords:
+            flattened_keywords.append({"keyword": kw.lower(), "element": element})
+            
+    # Sort by descending length to prevent partial match overlaps (e.g. "white musk" vs "musk")
+    flattened_keywords.sort(key=lambda x: len(x["keyword"]), reverse=True)
+
+    notes_list = [n.strip().lower() for n in notes_text.split(",")]
+
+    for note in notes_list:
+        for item in flattened_keywords:
+            if item["keyword"] in note:
+                scores[item["element"]] += 1.0
+                break
+
+    total_score = sum(scores.values())
+    if total_score > 0:
+        for element in scores:
+            scores[element] = round((scores[element] / total_score), 3)
+
+    return scores
 
 def compute_compatibility_score(user_counts: dict, perfume_vec: dict, weak: str, strong: str) -> int:
     total_perf = sum(perfume_vec.values()) or 1
