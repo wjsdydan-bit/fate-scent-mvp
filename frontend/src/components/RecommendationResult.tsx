@@ -11,7 +11,7 @@ import PhotoShareOverlay from "./PhotoShareOverlay";
 const NOTE_KO_MAP: Record<string, string> = {
     "bergamot": "베르가못", "lemon": "레몬", "orange": "오렌지", "grapefruit": "자몽",
     "lime": "라임", "mandarin": "만다린", "yuzu": "유자", "rose": "로즈",
-    "jasmine": "자스민", "ylang-ylang": "일랑일랑", "tuberose": "튜베로즈",
+    "jasmine": "자스민", "ylang": "일랑일랑", "tuberose": "튜베로즈",
     "iris": "아이리스", "neroli": "네롤리", "violet": "바이올렛",
     "sandalwood": "샌달우드", "cedar": "시더", "vetiver": "베티버",
     "patchouli": "패출리", "oud": "우드", "oakmoss": "오크모스", "moss": "모스",
@@ -24,7 +24,15 @@ const NOTE_KO_MAP: Record<string, string> = {
     "white floral": "화이트 플로럴", "floral": "플로럴", "fruity": "프루티",
     "woody": "우디", "citrus": "시트러스", "spicy": "스파이시",
     "powdery": "파우더리", "sweet": "스위트", "warm": "웜", "fresh": "프레시",
-    "coconut": "코코넛", "honey": "허니", "caramel": "카라멜",
+    "petitgrain": "쁘띠그레인", "galbanum": "갈바넘", "bamboo": "대나무", "cypress": "사이프러스",
+    "apple": "사과", "fig": "무화과", "blossom": "블러썸", "peony": "작약", "geranium": "제라늄",
+    "lily": "백합", "saffron": "사프란", "carnation": "카네이션", "magnolia": "목련", "freesia": "프리지아",
+    "orchid": "난초", "peach": "복숭아", "pear": "서양배", "heliotrope": "헬리오트로프",
+    "chocolate": "초콜릿", "caramel": "카라멜", "honey": "꿀", "almond": "아몬드", "plum": "자두",
+    "cardamom": "카다멈", "nutmeg": "너트멕", "coriander": "코리앤더", "metallic": "메탈릭",
+    "eucalyptus": "유칼립투스", "rosemary": "로즈마리", "juniper": "주니퍼", "sage": "세이지",
+    "herb": "허브", "ambergris": "앰버그리스", "salt": "소금", "sea": "바다", "seaweed": "해초",
+    "water": "워터", "cucumber": "오이", "melon": "멜론", "calone": "카론", "castoreum": "카스토륨", "civet": "시벳"
 };
 
 function translateNotes(notes: string): string {
@@ -46,11 +54,30 @@ const ELEMENT_EMOJI: Record<string, string> = {
     Wood: "🌳", Fire: "🔥", Earth: "🏔️", Metal: "⚙️", Water: "💧"
 };
 const ELEMENT_KEYWORDS: Record<string, string[]> = {
-    Wood: ["green", "herbal", "leafy", "tea", "vetiver", "pine", "grass"],
-    Fire: ["citrus", "spicy", "warm spicy", "pepper", "ginger", "cinnamon", "rose"],
-    Earth: ["woody", "musk", "amber", "powdery", "patchouli", "vanilla", "oud"],
-    Metal: ["aldehyde", "mineral", "mint", "cool", "soapy", "white floral"],
-    Water: ["aquatic", "marine", "sea", "watery", "ozonic", "salty", "sea salt"]
+    Wood: [
+        "bergamot", "lemon", "mandarin", "grapefruit", "orange",
+        "petitgrain", "green", "galbanum", "bamboo", "tea", "cypress",
+        "apple", "fig", "neroli", "citrus"
+    ],
+    Fire: [
+        "jasmine", "rose", "ylang", "tuberose", "blossom", "peony",
+        "geranium", "lily", "saffron", "leather", "tobacco", "incense",
+        "pepper", "cinnamon", "carnation", "magnolia", "freesia", "orchid", "spicy"
+    ],
+    Earth: [
+        "vanilla", "tonka", "patchouli", "iris", "benzoin", "peach",
+        "pear", "heliotrope", "violet", "oakmoss", "vetiver", "sandalwood",
+        "chocolate", "caramel", "honey", "almond", "plum", "amber", "sweet"
+    ],
+    Metal: [
+        "white musk", "lavender", "cardamom", "nutmeg", "coriander",
+        "ginger", "mint", "aldehyde", "cedar", "metallic",
+        "eucalyptus", "rosemary", "juniper", "sage", "pine", "herb"
+    ],
+    Water: [
+        "musk", "ambergris", "sea", "marine", "aquatic", "salt",
+        "seaweed", "water", "cucumber", "melon", "calone", "castoreum", "civet"
+    ]
 };
 
 function getNoteElementHints(notes: string): { elem: string; ko: string; emoji: string; matches: string[] }[] {
