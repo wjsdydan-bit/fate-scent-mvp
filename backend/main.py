@@ -683,13 +683,9 @@ async def get_perfume_image_url(brand: str, name: str, db_img_url: Optional[str]
         if "fragrantica.com" not in db_img_url:
             return db_img_url
 
-    cache_key = f"{brand}_{name}"
-    if cache_key in image_cache:
-        return image_cache[cache_key]
-    
-    # Run synchronous DuckDuckGo search in a thread pool to avoid blocking
-    loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(None, _sync_fetch_image, brand, name)
+    # External search disabled to improve latency per user request.
+    # We only rely on direct database URLs or cache.
+    return None
 
 @app.post("/api/compatibility", response_model=CompatResponse)
 async def get_compatibility(req: CompatRequest):
