@@ -76,46 +76,46 @@ export default function OnboardingLanding({ onStart }: OnboardingLandingProps) {
             </p>
           </div>
 
-          {/* 중앙 대표 비주얼 영역 (중앙 정렬 및 비율 안정 배분) */}
-          <div className="flex-1 flex flex-col justify-center items-center overflow-hidden py-4 relative">
+          {/* 중앙 대표 비주얼 영역 (제목과의 흔들림 없는 최소 높이 및 중앙 정렬 유지) */}
+          <div className="flex-1 flex flex-col justify-center items-center overflow-hidden py-3 relative min-h-[220px] sm:min-h-[280px]">
             
-            {/* 1페이지 대표 비주얼: 오늘의 기운 카드 -> 향수 추천 연결 대형 일러스트 */}
+            {/* 1페이지 대표 비주얼: 오늘의 기운 카드 -> 향수 추천 연결 대형 일러스트 (20~25% 확대) */}
             {page === 0 && (
               <div className="w-full flex items-center justify-center pointer-events-none select-none relative" aria-hidden="true">
-                {/* 비주얼 배경 옅은 살구/아이보리색 그라데이션 원 */}
-                <div className="absolute w-56 h-56 rounded-full bg-gradient-to-tr from-orange-50/50 to-amber-50/60 blur-xl"></div>
+                {/* 비주얼 배경 그라데이션 원 */}
+                <div className="absolute w-64 h-64 sm:w-72 sm:h-72 rounded-full bg-gradient-to-tr from-orange-50/50 to-amber-50/60 blur-xl"></div>
                 
-                <div className="relative flex items-center justify-center gap-6 w-full max-w-[340px]">
+                <div className="relative flex items-center justify-center gap-7 sm:gap-9 w-full max-w-[380px] sm:max-w-[430px] px-2">
                   {/* 운세 카드 */}
-                  <div className="w-24 h-36 bg-white border border-slate-200/80 rounded-2xl shadow-md p-3 flex flex-col justify-between items-center shrink-0">
-                    <span className="text-[10px] font-extrabold text-slate-400 tracking-wider">FORTUNE</span>
-                    <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-500 my-2">
-                      <Sparkles className="w-5 h-5" />
+                  <div className="w-28 sm:w-32 h-40 sm:h-46 bg-white border border-slate-200/80 rounded-2xl shadow-md p-3.5 sm:p-4 flex flex-col justify-between items-center shrink-0">
+                    <span className="text-[10px] sm:text-[11px] font-extrabold text-slate-400 tracking-wider">FORTUNE</span>
+                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-amber-50 flex items-center justify-center text-amber-500 my-1">
+                      <Sparkles className="w-6 h-6" />
                     </div>
-                    <span className="text-[11px] font-black text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full">
+                    <span className="text-[11px] sm:text-[12px] font-black text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full whitespace-nowrap">
                       오늘의 기운
                     </span>
                   </div>
 
                   {/* 연결선/화살표 */}
-                  <div className="flex flex-col items-center justify-center">
+                  <div className="flex flex-col items-center justify-center shrink-0">
                     <div className="flex items-center text-orange-400 animate-pulse">
-                      <span className="text-lg font-bold">→</span>
+                      <span className="text-xl sm:text-2xl font-black">→</span>
                     </div>
                   </div>
 
                   {/* 향수병 일러스트 */}
-                  <div className="w-24 h-36 bg-slate-900 text-white rounded-2xl shadow-lg p-3 flex flex-col justify-between items-center shrink-0 relative overflow-hidden">
-                    <div className="absolute -right-4 -bottom-4 w-12 h-12 bg-orange-500/20 rounded-full blur-xl"></div>
-                    <span className="text-[9px] font-extrabold text-slate-500 tracking-wider">SCENT</span>
+                  <div className="w-28 sm:w-32 h-40 sm:h-46 bg-slate-900 text-white rounded-2xl shadow-lg p-3.5 sm:p-4 flex flex-col justify-between items-center shrink-0 relative overflow-hidden">
+                    <div className="absolute -right-4 -bottom-4 w-14 h-14 bg-orange-500/20 rounded-full blur-xl"></div>
+                    <span className="text-[9px] sm:text-[10px] font-extrabold text-slate-500 tracking-wider">SCENT</span>
                     
-                    <svg className="w-8 h-12 text-slate-300 my-1" viewBox="0 0 100 150" fill="currentColor">
+                    <svg className="w-10 h-14 sm:w-11 sm:h-16 text-slate-300 my-1" viewBox="0 0 100 150" fill="currentColor">
                       <rect x="35" y="10" width="30" height="15" rx="3" />
                       <rect x="45" y="25" width="10" height="15" />
                       <rect x="15" y="40" width="70" height="100" rx="15" />
                     </svg>
 
-                    <span className="text-[10px] font-extrabold text-orange-400 tracking-tighter">
+                    <span className="text-[10px] sm:text-[11px] font-extrabold text-orange-400 tracking-tighter whitespace-nowrap">
                       Woody · Citrus
                     </span>
                   </div>
@@ -123,73 +123,73 @@ export default function OnboardingLanding({ onStart }: OnboardingLandingProps) {
               </div>
             )}
 
-            {/* 2페이지 대표 비주얼: 대형 분석 다이어그램 */}
+            {/* 2페이지 대표 비주얼: 대형 분석 다이어그램 (20~25% 확대) */}
             {page === 1 && (
               <div className="w-full flex flex-col items-center justify-center pointer-events-none select-none relative" aria-hidden="true">
-                {/* 2페이지 배경 추상 면 (위치가 다른 베이지 원형) */}
-                <div className="absolute w-60 h-60 rounded-full bg-slate-100/70 blur-xl -top-6 -left-6"></div>
+                {/* 2페이지 배경 추상 원형 */}
+                <div className="absolute w-64 h-64 sm:w-72 sm:h-72 rounded-full bg-slate-100/70 blur-xl -top-6 -left-6"></div>
                 
-                <div className="relative flex flex-col items-center justify-center w-full max-w-[340px] bg-white border border-slate-200/80 p-6 rounded-3xl shadow-sm">
+                <div className="relative flex flex-col items-center justify-center w-full max-w-[370px] sm:max-w-[420px] bg-white border border-slate-200/80 p-7 sm:p-8 rounded-3xl shadow-sm px-4">
                   {/* 상단 두 입력 요소 */}
-                  <div className="flex items-center justify-between w-full mb-4">
-                    <div className="flex flex-col items-center p-3 bg-slate-50 rounded-2xl w-[100px] border border-slate-100">
-                      <Compass className="w-6 h-6 text-slate-600 mb-1" />
-                      <span className="text-[11px] font-extrabold text-slate-700">오행의 균형</span>
+                  <div className="flex items-center justify-between w-full mb-5">
+                    <div className="flex flex-col items-center p-3.5 bg-slate-50 rounded-2xl w-[110px] sm:w-[125px] border border-slate-100 shrink-0">
+                      <Compass className="w-7 h-7 sm:w-8 sm:h-8 text-slate-600 mb-1" />
+                      <span className="text-[11px] sm:text-[12px] font-extrabold text-slate-700 whitespace-nowrap">오행의 균형</span>
                     </div>
                     
-                    <span className="text-slate-400 font-bold text-lg">+</span>
+                    <span className="text-slate-400 font-bold text-xl shrink-0">+</span>
                     
-                    <div className="flex flex-col items-center p-3 bg-orange-50/50 rounded-2xl w-[100px] border border-orange-100/50">
-                      <Heart className="w-6 h-6 text-orange-500 mb-1" />
-                      <span className="text-[11px] font-extrabold text-slate-700">향 취향</span>
+                    <div className="flex flex-col items-center p-3.5 bg-orange-50/50 rounded-2xl w-[110px] sm:w-[125px] border border-orange-100/50 shrink-0">
+                      <Heart className="w-7 h-7 sm:w-8 sm:h-8 text-orange-500 mb-1" />
+                      <span className="text-[11px] sm:text-[12px] font-extrabold text-slate-700 whitespace-nowrap">향 취향</span>
                     </div>
                   </div>
 
                   {/* 아래 방향 연결 */}
-                  <ArrowDown className="w-4 h-4 text-slate-300 mb-3" />
+                  <ArrowDown className="w-5 h-5 text-slate-300 mb-4 shrink-0" />
 
                   {/* 향수 데이터 비교 영역 */}
-                  <div className="w-full bg-slate-900 text-white p-3 rounded-2xl flex items-center justify-center gap-2">
-                    <Sparkles className="w-4 h-4 text-orange-400 animate-pulse" />
-                    <span className="text-[12px] font-black tracking-wide">향수 데이터 비교</span>
+                  <div className="w-full bg-slate-900 text-white p-4 rounded-2xl flex items-center justify-center gap-2.5 shrink-0">
+                    <Sparkles className="w-4.5 h-4.5 text-orange-400 animate-pulse" />
+                    <span className="text-[12.5px] sm:text-[13.5px] font-black tracking-wide">향수 데이터 비교</span>
                   </div>
                 </div>
 
-                <p className="text-[11.5px] text-slate-400 font-bold mt-4">
+                <p className="text-[12px] sm:text-[13px] text-slate-400 font-bold mt-5">
                   사주와 취향을 함께 봅니다.
                 </p>
               </div>
             )}
 
-            {/* 3페이지 대표 비주얼: 실제 결과 화면 축약 패널 */}
+            {/* 3페이지 대표 비주얼: 결과 화면 축약 패널 (12~18% 확대) */}
             {page === 2 && (
               <div className="w-full flex items-center justify-center pointer-events-none select-none relative py-1" aria-hidden="true">
-                <div className="w-full max-w-[320px] bg-slate-50 border border-slate-200/80 rounded-3xl p-5 shadow-sm space-y-4">
+                <div className="w-full max-w-[350px] sm:max-w-[390px] bg-slate-50 border border-slate-200/80 rounded-3xl p-6 sm:p-7 shadow-sm space-y-4">
                   {/* 결과 예시 패널 내부 */}
                   <div className="flex justify-between items-center border-b border-slate-200/50 pb-2">
-                    <span className="text-[10px] font-extrabold text-slate-400">결과 예시</span>
-                    <span className="text-[10px] font-extrabold text-orange-500 bg-orange-50 px-2 py-0.5 rounded-full">BEST</span>
+                    <span className="text-[10px] sm:text-[11px] font-extrabold text-slate-400">결과 예시</span>
+                    <span className="text-[10px] sm:text-[11px] font-extrabold text-orange-500 bg-orange-50 px-2 py-0.5 rounded-full">BEST</span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 text-[11px]">
-                    <div className="p-2.5 bg-white rounded-xl border border-slate-100">
+                  <div className="grid grid-cols-2 gap-2 text-[11px] sm:text-[12px]">
+                    <div className="p-3 bg-white rounded-xl border border-slate-100">
                       <span className="text-slate-400 block mb-0.5">오행 분석</span>
                       <strong className="text-slate-800 font-extrabold">목(木) 기운 보완</strong>
                     </div>
-                    <div className="p-2.5 bg-white rounded-xl border border-slate-100">
+                    <div className="p-3 bg-white rounded-xl border border-slate-100">
                       <span className="text-slate-400 block mb-0.5">향수 추천</span>
                       <strong className="text-slate-800 font-extrabold">차분한 우디 향수</strong>
                     </div>
                   </div>
 
-                  <div className="p-2.5 bg-white rounded-xl border border-slate-100 text-[11px]">
+                  <div className="p-3 bg-white rounded-xl border border-slate-100 text-[11.5px] sm:text-[12.5px]">
                     <span className="text-slate-400 block mb-0.5">추천 이유</span>
                     <p className="text-slate-700 font-medium leading-relaxed">
                       "부족한 목의 기운을 보완하며 안정감을 줍니다."
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between text-[11px] bg-white p-2.5 rounded-xl border border-slate-100">
+                  <div className="flex items-center justify-between text-[11.5px] sm:text-[12.5px] bg-white p-3 rounded-xl border border-slate-100">
                     <span className="text-slate-400">향수 궁합</span>
                     <strong className="text-slate-800 font-extrabold">좋은 궁합 (85점)</strong>
                   </div>
@@ -198,9 +198,9 @@ export default function OnboardingLanding({ onStart }: OnboardingLandingProps) {
             )}
           </div>
 
-          {/* 3페이지 하단 기능 진입 버튼 */}
+          {/* 3페이지 하단 기능 진입 버튼 (비주얼 보드와 16px 이상 여백 유지) */}
           {page === 2 && (
-            <div className="space-y-2 pt-3 shrink-0 pb-1">
+            <div className="space-y-2 pt-4 shrink-0 pb-1">
               <button
                 onClick={() => onStart('direct')}
                 className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold text-[15px] py-3.5 rounded-xl shadow-md transition-transform active:scale-[0.98] flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-orange-500 outline-none"
