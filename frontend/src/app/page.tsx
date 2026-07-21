@@ -8,9 +8,7 @@ import RecommendationForm from "@/components/RecommendationForm";
 import LoadingStep2 from "@/components/LoadingStep2";
 import RecommendationResult from "@/components/RecommendationResult";
 import DirectRecommendForm from "@/components/DirectRecommendForm";
-import Hero from "@/components/Hero";
-import WhyPerfumanceSection from "@/components/WhyPerfumanceSection";
-import ResultsPreviewSection from "@/components/ResultsPreviewSection";
+import OnboardingLanding from "@/components/OnboardingLanding";
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
 export default function Home() {
@@ -118,13 +116,7 @@ export default function Home() {
       <div className="w-full h-full min-h-screen flex flex-col">
 
 
-        {step === 0 && (
-          <div className="flex-1 w-full overflow-y-auto pb-safe">
-            <Hero onStart={handleStart} />
-            <WhyPerfumanceSection />
-            <ResultsPreviewSection onStart={handleStart} />
-          </div>
-        )}
+        {step === 0 && <OnboardingLanding onStart={handleStart} />}
 
         <div className="w-full p-4 sm:p-6">
           {step === 1 && (
