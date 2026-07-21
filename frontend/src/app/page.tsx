@@ -39,7 +39,6 @@ export default function Home() {
       setCompatData(result);
       setStep(3); // Result 1
     } catch (error) {
-      console.error(error);
       setApiError("분석 중 일시적인 오류가 발생했습니다. 입력 정보를 확인하고 다시 시도해주세요.");
       setStep(1);
     }
@@ -62,7 +61,6 @@ export default function Home() {
       setRecommendData(result);
       setStep(6); // Result 2
     } catch (error) {
-      console.error("Direct Recommend API Error:", error);
       setApiError("추천 중 일시적인 오류가 발생했습니다. 잠시 후 다시 버튼을 눌러주세요.");
       setStep(1);
     }
@@ -95,7 +93,6 @@ export default function Home() {
       setRecommendData(result);
       setStep(6); // Result 2
     } catch (error) {
-      console.error("Recommend API Error:", error);
       setApiError("결과를 가져오는 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.");
       setStep(4);
     }

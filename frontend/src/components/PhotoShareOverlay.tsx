@@ -181,8 +181,7 @@ export default function PhotoShareOverlay({
             link.click();
             document.body.removeChild(link);
         } catch (err: any) {
-            console.error(err);
-            alert(`이미지 저장 중 오류가 발생했습니다: ${err?.message || err}`);
+            alert(`캡쳐 중 오류가 발생했습니다: ${err?.message || err}`);
         }
     };
 
