@@ -61,15 +61,19 @@ GEMINI_TIMEOUT_MS = 30_000
 
 app = FastAPI(title="Fate Scent API v2")
 
-frontend_urls_env = os.environ.get("FRONTEND_URLS", "http://localhost:3000")
+frontend_urls_env = os.environ.get("FRONTEND_URLS", "")
 allowed_origins = [url.strip() for url in frontend_urls_env.split(",") if url.strip()]
 if not allowed_origins:
-    allowed_origins = ["http://localhost:3000"]
+    allowed_origins = ["http://localhost:3000", "https://perfumance-kappa.vercel.app"]
+
+allow_credentials = True
+if "*" in allowed_origins:
+    allow_credentials = False
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins, 
-    allow_credentials=True,
+    allow_credentials=allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
