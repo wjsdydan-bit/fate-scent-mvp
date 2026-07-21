@@ -8,7 +8,9 @@ import RecommendationForm from "@/components/RecommendationForm";
 import LoadingStep2 from "@/components/LoadingStep2";
 import RecommendationResult from "@/components/RecommendationResult";
 import DirectRecommendForm from "@/components/DirectRecommendForm";
-
+import Hero from "@/components/Hero";
+import WhyPerfumanceSection from "@/components/WhyPerfumanceSection";
+import ResultsPreviewSection from "@/components/ResultsPreviewSection";
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
 export default function Home() {
@@ -22,6 +24,11 @@ export default function Home() {
   const [compatData, setCompatData] = useState<any>(null);
   const [recommendData, setRecommendData] = useState<any>(null);
   const [apiError, setApiError] = useState<string>("");
+
+  const handleStart = (flow: 'direct' | 'compat') => {
+    setUserInfo((prev: any) => ({ ...(prev || {}), flow }));
+    setStep(1);
+  };
 
   const handleInputSubmit = async (data: any) => {
     setApiError("");
@@ -112,24 +119,10 @@ export default function Home() {
 
 
         {step === 0 && (
-          <div className="flex flex-col flex-1 h-screen relative bg-white text-slate-900 animate-in fade-in duration-1000">
-            <div className="flex-1 flex flex-col items-center justify-center -mt-10">
-              <h1 className="text-4xl sm:text-5xl font-black tracking-tighter mb-4 text-center text-slate-900">
-                PERFUMANCE
-              </h1>
-              <p className="text-slate-400 text-sm text-center">
-                사주로 보는 향수 케미
-              </p>
-            </div>
-
-            <div className="absolute bottom-0 w-full p-6 pb-12">
-              <button
-                onClick={() => setStep(1)}
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold text-lg py-4 rounded-2xl shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2"
-              >
-                향수와 케미 알아보기
-              </button>
-            </div>
+          <div className="flex-1 w-full overflow-y-auto pb-safe">
+            <Hero onStart={handleStart} />
+            <WhyPerfumanceSection />
+            <ResultsPreviewSection onStart={handleStart} />
           </div>
         )}
 
