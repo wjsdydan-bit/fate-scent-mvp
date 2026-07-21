@@ -59,6 +59,34 @@ except Exception:
 GEMINI_MODEL_NAME = "gemini-flash-latest"
 GEMINI_TIMEOUT_MS = 30_000
 
+def _log_gemini_result(route: str, e: Exception = None):
+    if e is None:
+        print(f"[Gemini Diagnostic] route={route} | status=success | reason=Gemini generation success")
+        return
+
+    reason = "unknown_error"
+    err_str = str(e).lower()
+    
+    import asyncio
+    if isinstance(e, asyncio.TimeoutError):
+        reason = "timeout"
+    elif type(e).__name__ == "JSONDecodeError" or "json" in err_str:
+        reason = "invalid_json"
+    elif type(e).__name__ == "ValidationError":
+        reason = "schema_validation_error"
+    else:
+        # HTTP Status checks for google genai APIError or standard errors
+        if "401" in err_str or "unauthenticated" in err_str or "authentication" in err_str:
+            reason = "authentication_error"
+        elif "403" in err_str or "permission" in err_str:
+            reason = "permission_error"
+        elif "404" in err_str or "not found" in err_str:
+            reason = "model_not_found"
+        elif "429" in err_str or "quota" in err_str or "rate limit" in err_str or "exhausted" in err_str:
+            reason = "rate_limit"
+            
+    print(f"[Gemini Diagnostic] route={route} | status=failed | reason={reason}")
+
 app = FastAPI(title="Fate Scent API v2")
 
 frontend_urls_env = os.environ.get("FRONTEND_URLS", "")
@@ -141,10 +169,19 @@ if os.path.exists(env_path):
     load_dotenv(env_path)
 
 client = None
+gemini_key_exists = bool(os.environ.get("GEMINI_API_KEY"))
+print(f"[Gemini Diagnostic] GEMINI_API_KEY exists: {gemini_key_exists}")
+
 if GEMINI_SDK_AVAILABLE:
     api_key = os.environ.get("GEMINI_API_KEY")
     if api_key:
-        client = genai.Client(api_key=api_key, http_options=types.HttpOptions(timeout=GEMINI_TIMEOUT_MS))
+        try:
+            client = genai.Client(api_key=api_key, http_options=types.HttpOptions(timeout=GEMINI_TIMEOUT_MS))
+            print(f"[Gemini Diagnostic] Client initialized successfully. Model: {GEMINI_MODEL_NAME}")
+        except Exception as e:
+            print(f"[Gemini Diagnostic] Client initialization failed: {type(e).__name__}")
+    else:
+        print("[Gemini Diagnostic] Client not initialized (missing_key)")
 
 df = pd.DataFrame()
 
@@ -581,6 +618,7 @@ def find_perfume_in_db(brand_input: str, name_input: str):
 
 async def get_perfume_notes_via_ai(brand: str, name: str) -> str:
     if not client:
+        _log_gemini_result("notes_extraction", Exception("missing_key"))
         return ""
     try:
         import asyncio
@@ -601,7 +639,7 @@ async def get_perfume_notes_via_ai(brand: str, name: str) -> str:
             return ""
         return ans
     except (Exception, asyncio.TimeoutError) as e:
-        print(f"Error in get_perfume_notes_via_ai: {type(e).__name__}")
+        _log_gemini_result("notes_extraction", e)
         return ""
 
 def compute_perfume_element_vector(notes_text: str) -> dict[str, float]:
@@ -697,6 +735,7 @@ async def generate_compatibility_result(
     }
 
     if not client:
+        _log_gemini_result("compatibility", Exception("missing_key"))
         return fallback
 
     top2_str = ", ".join([f"{ELEMENT_EMOJI[e]} {ELEMENTS_KO[e]}({v:.0%})" for e, v in top2_perf if v > 0])
@@ -776,9 +815,10 @@ async def generate_compatibility_result(
         parsed_data = CompatResultSchema(**data)
         final_data = fallback.copy()
         final_data.update(parsed_data.model_dump())
+        _log_gemini_result("compatibility", None)
         return final_data
     except (Exception, asyncio.TimeoutError) as e:
-        print(f"Error in generate_compatibility_result: {type(e).__name__}")
+        _log_gemini_result("compatibility", e)
         return fallback
 
 
@@ -977,6 +1017,7 @@ async def generate_comprehensive_reading_json(
     }
 
     if not client:
+        _log_gemini_result("direct_recommendation", Exception("missing_key"))
         return fallback
 
     p1_notes = notes_with_top_mid_base(p1)
@@ -1065,11 +1106,10 @@ async def generate_comprehensive_reading_json(
         parsed_data = ReadingResultSchema(**data)
         final_data = fallback.copy()
         final_data.update(parsed_data.model_dump())
+        _log_gemini_result("direct_recommendation", None)
         return final_data
     except (Exception, asyncio.TimeoutError) as e:
-        import traceback
-        traceback.print_exc()
-        print(f"Error in generate_comprehensive_reading_json: {type(e).__name__} - {e}")
+        _log_gemini_result("direct_recommendation", e)
         return fallback
 
 
