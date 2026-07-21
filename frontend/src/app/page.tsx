@@ -112,7 +112,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen max-w-md mx-auto bg-white relative overflow-hidden flex flex-col items-center justify-start p-0 sm:border-x border-slate-100 shadow-2xl shadow-slate-200/50">
+    <main className="min-h-screen max-w-md sm:max-w-[540px] mx-auto bg-white relative overflow-hidden flex flex-col items-center justify-start p-0 sm:border-x border-slate-100 shadow-2xl shadow-slate-200/50">
       <div className="w-full h-full min-h-screen flex flex-col">
 
 

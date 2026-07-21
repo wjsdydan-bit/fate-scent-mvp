@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Compass, Heart, Sparkles, Award, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Compass, Heart, Sparkles, Award, ArrowRight, ArrowLeft, ArrowDown } from 'lucide-react';
 
 interface OnboardingLandingProps {
   onStart: (flow: 'direct' | 'compat') => void;
@@ -27,7 +27,7 @@ export default function OnboardingLanding({ onStart }: OnboardingLandingProps) {
   return (
     <div className="flex flex-col flex-1 h-screen max-h-screen justify-between bg-white text-slate-900 overflow-hidden select-none">
       {/* 상단 헤더 */}
-      <header className="w-full flex items-center justify-between px-6 py-4 border-b border-slate-50 shrink-0 h-14">
+      <header className="w-full flex items-center justify-between px-6 py-4 border-b border-slate-50 shrink-0 h-14 z-10 bg-white">
         <span className="text-lg font-black tracking-tighter text-slate-900">
           PERFUMANCE
         </span>
@@ -42,126 +42,156 @@ export default function OnboardingLanding({ onStart }: OnboardingLandingProps) {
         )}
       </header>
 
-      {/* 중앙 콘텐츠 영역 (세 페이지 제목 및 비주얼 가로축/세로 리듬 일관성 적용) */}
-      <main className="flex-1 flex flex-col px-6 py-4 justify-start overflow-hidden w-full max-w-[440px] mx-auto">
-        <div key={page} className="flex flex-col flex-1 animate-in fade-in duration-300 w-full">
+      {/* 중앙 콘텐츠 영역 */}
+      <main className="flex-1 flex flex-col px-6 py-4 justify-start overflow-hidden w-full max-w-[540px] mx-auto relative">
+        <div key={page} className="flex flex-col flex-1 animate-in fade-in duration-300 w-full z-10">
           
-          {/* 3개 페이지 공통 타이틀 & 설명 영역 (세로 리듬 통일) */}
-          <div className="pt-2 pb-4 space-y-2 shrink-0 min-h-[110px] flex flex-col justify-start">
+          {/* 공통 타이틀 & 설명 영역 (세로 리듬 통일) */}
+          <div className="pt-2 pb-4 space-y-2 shrink-0 min-h-[120px] flex flex-col justify-start">
             <h2
               ref={titleRef}
               tabIndex={-1}
-              className="text-[20px] sm:text-[22px] font-extrabold tracking-tight text-slate-900 leading-snug outline-none"
+              className="text-[21px] sm:text-[23px] font-extrabold tracking-tight text-slate-900 leading-snug outline-none"
             >
               {page === 0 && (
-                <>향수를 고를 때마다<br />뭘 기준으로 봐야 할지 애매했습니다.</>
+                <>매일 보는 운세가<br />상품 추천으로 이어질 수 있을까?</>
               )}
               {page === 1 && (
-                <>그래서 사주와 향 취향을<br />같이 보기로 했습니다.</>
+                <>사주만으로<br />향수를 고르지는 않습니다.</>
               )}
               {page === 2 && (
-                <>추천 결과만 보여주지 않고<br />왜 잘 맞는지도 설명합니다.</>
+                <>추천 향수와<br />그 이유를 함께 보여드립니다.</>
               )}
             </h2>
-            <p className="text-slate-500 text-[13.5px] leading-relaxed">
+            <p className="text-slate-500 text-[14px] leading-relaxed">
               {page === 0 && (
-                <>유명한 향인지, 내 취향인지,<br />정작 나와 잘 맞는지는 알기 어려웠습니다.</>
+                <>익숙한 사주를 활용해<br />향수를 추천하는 서비스를 만들어봤습니다.</>
               )}
               {page === 1 && (
-                <>오행의 균형을 참고하고,<br />좋아하는 향과 싫어하는 향도 함께 반영합니다.</>
+                <>오행의 균형과 실제 향 취향을 함께 반영해<br />향수 데이터에서 어울리는 후보를 찾습니다.</>
               )}
               {page === 2 && (
-                <>오행 분석, 향수 추천, 추천 이유와<br />선택한 향수와의 궁합을 확인할 수 있습니다.</>
+                <>오행 분석과 향수 추천, 추천 이유,<br />궁금한 향수와의 궁합을 확인할 수 있습니다.</>
               )}
             </p>
           </div>
 
-          {/* 중앙 비주얼 영역 (중앙 정렬 및 적당한 밀도 유지) */}
-          <div className="flex-1 flex flex-col justify-center items-center overflow-hidden py-2">
+          {/* 중앙 대표 비주얼 영역 (중앙 정렬 및 비율 안정 배분) */}
+          <div className="flex-1 flex flex-col justify-center items-center overflow-hidden py-4 relative">
             
-            {/* 1페이지 비주얼: 약 30% 확대, 대비 상향 조정 */}
+            {/* 1페이지 대표 비주얼: 오늘의 기운 카드 -> 향수 추천 연결 대형 일러스트 */}
             {page === 0 && (
-              <div className="w-full flex items-center justify-center pointer-events-none select-none" aria-hidden="true">
-                <div className="relative w-48 h-48 bg-slate-100 rounded-full border-2 border-slate-200 flex items-center justify-center shadow-inner">
-                  {/* 향수병 모양 대비 강화 */}
-                  <svg className="w-20 h-28 text-slate-400" viewBox="0 0 100 150" fill="currentColor">
-                    <rect x="35" y="10" width="30" height="15" rx="3" />
-                    <rect x="45" y="25" width="10" height="15" />
-                    <rect x="15" y="40" width="70" height="100" rx="15" />
-                    <line x1="15" y1="75" x2="85" y2="75" stroke="white" strokeWidth="4" />
-                  </svg>
-                  {/* 라벨 크기 및 위치 밸런스 조정 */}
-                  <div className="absolute top-4 left-4 bg-slate-900 text-white px-2.5 py-1 rounded-md text-[11px] font-bold shadow-sm">
-                    Citrus
+              <div className="w-full flex items-center justify-center pointer-events-none select-none relative" aria-hidden="true">
+                {/* 비주얼 배경 옅은 살구/아이보리색 그라데이션 원 */}
+                <div className="absolute w-56 h-56 rounded-full bg-gradient-to-tr from-orange-50/50 to-amber-50/60 blur-xl"></div>
+                
+                <div className="relative flex items-center justify-center gap-6 w-full max-w-[340px]">
+                  {/* 운세 카드 */}
+                  <div className="w-24 h-36 bg-white border border-slate-200/80 rounded-2xl shadow-md p-3 flex flex-col justify-between items-center shrink-0">
+                    <span className="text-[10px] font-extrabold text-slate-400 tracking-wider">FORTUNE</span>
+                    <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-500 my-2">
+                      <Sparkles className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-black text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full">
+                      오늘의 기운
+                    </span>
                   </div>
-                  <div className="absolute bottom-8 right-4 bg-slate-900 text-white px-2.5 py-1 rounded-md text-[11px] font-bold shadow-sm">
-                    Woody
+
+                  {/* 연결선/화살표 */}
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="flex items-center text-orange-400 animate-pulse">
+                      <span className="text-lg font-bold">→</span>
+                    </div>
                   </div>
-                  <div className="absolute top-1/2 -translate-y-1/2 right-2 bg-slate-900 text-white px-2.5 py-1 rounded-md text-[11px] font-bold shadow-sm">
-                    Musk
+
+                  {/* 향수병 일러스트 */}
+                  <div className="w-24 h-36 bg-slate-900 text-white rounded-2xl shadow-lg p-3 flex flex-col justify-between items-center shrink-0 relative overflow-hidden">
+                    <div className="absolute -right-4 -bottom-4 w-12 h-12 bg-orange-500/20 rounded-full blur-xl"></div>
+                    <span className="text-[9px] font-extrabold text-slate-500 tracking-wider">SCENT</span>
+                    
+                    <svg className="w-8 h-12 text-slate-300 my-1" viewBox="0 0 100 150" fill="currentColor">
+                      <rect x="35" y="10" width="30" height="15" rx="3" />
+                      <rect x="45" y="25" width="10" height="15" />
+                      <rect x="15" y="40" width="70" height="100" rx="15" />
+                    </svg>
+
+                    <span className="text-[10px] font-extrabold text-orange-400 tracking-tighter">
+                      Woody · Citrus
+                    </span>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* 2페이지 비주얼: 폭 확대, 문구 변경 */}
+            {/* 2페이지 대표 비주얼: 대형 분석 다이어그램 */}
             {page === 1 && (
-              <div className="w-full flex flex-col items-center justify-center pointer-events-none select-none" aria-hidden="true">
-                <div className="flex items-center justify-between w-full max-w-[320px] bg-slate-50 border-2 border-slate-100 p-5 rounded-3xl shadow-sm">
-                  <div className="flex flex-col items-center space-y-2">
-                    <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center text-slate-700">
-                      <Compass className="w-6 h-6" />
+              <div className="w-full flex flex-col items-center justify-center pointer-events-none select-none relative" aria-hidden="true">
+                {/* 2페이지 배경 추상 면 (위치가 다른 베이지 원형) */}
+                <div className="absolute w-60 h-60 rounded-full bg-slate-100/70 blur-xl -top-6 -left-6"></div>
+                
+                <div className="relative flex flex-col items-center justify-center w-full max-w-[340px] bg-white border border-slate-200/80 p-6 rounded-3xl shadow-sm">
+                  {/* 상단 두 입력 요소 */}
+                  <div className="flex items-center justify-between w-full mb-4">
+                    <div className="flex flex-col items-center p-3 bg-slate-50 rounded-2xl w-[100px] border border-slate-100">
+                      <Compass className="w-6 h-6 text-slate-600 mb-1" />
+                      <span className="text-[11px] font-extrabold text-slate-700">오행의 균형</span>
                     </div>
-                    <span className="text-[12px] font-extrabold text-slate-700">사주 오행</span>
+                    
+                    <span className="text-slate-400 font-bold text-lg">+</span>
+                    
+                    <div className="flex flex-col items-center p-3 bg-orange-50/50 rounded-2xl w-[100px] border border-orange-100/50">
+                      <Heart className="w-6 h-6 text-orange-500 mb-1" />
+                      <span className="text-[11px] font-extrabold text-slate-700">향 취향</span>
+                    </div>
                   </div>
-                  <span className="text-slate-400 font-bold text-xl">+</span>
-                  <div className="flex flex-col items-center space-y-2">
-                    <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center text-orange-500">
-                      <Heart className="w-6 h-6" />
-                    </div>
-                    <span className="text-[12px] font-extrabold text-orange-500">향 취향</span>
-                  </div>
-                  <span className="text-slate-400 font-bold text-xl">→</span>
-                  <div className="flex flex-col items-center space-y-2">
-                    <div className="w-14 h-14 rounded-2xl bg-slate-800 flex items-center justify-center text-white">
-                      <Sparkles className="w-6 h-6" />
-                    </div>
-                    <span className="text-[12px] font-extrabold text-slate-200">추천 결과</span>
+
+                  {/* 아래 방향 연결 */}
+                  <ArrowDown className="w-4 h-4 text-slate-300 mb-3" />
+
+                  {/* 향수 데이터 비교 영역 */}
+                  <div className="w-full bg-slate-900 text-white p-3 rounded-2xl flex items-center justify-center gap-2">
+                    <Sparkles className="w-4 h-4 text-orange-400 animate-pulse" />
+                    <span className="text-[12px] font-black tracking-wide">향수 데이터 비교</span>
                   </div>
                 </div>
-                <p className="text-[12px] text-slate-400 font-semibold mt-5">
-                  사주만으로 향수를 정하지 않습니다.
+
+                <p className="text-[11.5px] text-slate-400 font-bold mt-4">
+                  사주와 취향을 함께 봅니다.
                 </p>
               </div>
             )}
 
-            {/* 3페이지 비주얼: 정적 리스트 박스 소폭 마진 조정 */}
+            {/* 3페이지 대표 비주얼: 실제 결과 화면 축약 패널 */}
             {page === 2 && (
-              <div className="w-full py-1 space-y-2 pointer-events-none select-none" aria-hidden="true">
-                <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 space-y-2.5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center shrink-0">
-                      <Compass className="w-3.5 h-3.5 text-slate-700" />
-                    </div>
-                    <span className="text-xs font-bold text-slate-800">오행 분석</span>
+              <div className="w-full flex items-center justify-center pointer-events-none select-none relative py-1" aria-hidden="true">
+                <div className="w-full max-w-[320px] bg-slate-50 border border-slate-200/80 rounded-3xl p-5 shadow-sm space-y-4">
+                  {/* 결과 예시 패널 내부 */}
+                  <div className="flex justify-between items-center border-b border-slate-200/50 pb-2">
+                    <span className="text-[10px] font-extrabold text-slate-400">결과 예시</span>
+                    <span className="text-[10px] font-extrabold text-orange-500 bg-orange-50 px-2 py-0.5 rounded-full">BEST</span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
-                      <Heart className="w-3.5 h-3.5 text-orange-600" />
+
+                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    <div className="p-2.5 bg-white rounded-xl border border-slate-100">
+                      <span className="text-slate-400 block mb-0.5">오행 분석</span>
+                      <strong className="text-slate-800 font-extrabold">목(木) 기운 보완</strong>
                     </div>
-                    <span className="text-xs font-bold text-slate-800">취향을 반영한 향수 추천</span>
+                    <div className="p-2.5 bg-white rounded-xl border border-slate-100">
+                      <span className="text-slate-400 block mb-0.5">향수 추천</span>
+                      <strong className="text-slate-800 font-extrabold">차분한 우디 향수</strong>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center shrink-0">
-                      <Sparkles className="w-3.5 h-3.5 text-slate-700" />
-                    </div>
-                    <span className="text-xs font-bold text-slate-800">추천 이유</span>
+
+                  <div className="p-2.5 bg-white rounded-xl border border-slate-100 text-[11px]">
+                    <span className="text-slate-400 block mb-0.5">추천 이유</span>
+                    <p className="text-slate-700 font-medium leading-relaxed">
+                      "부족한 목의 기운을 보완하며 안정감을 줍니다."
+                    </p>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center shrink-0">
-                      <Award className="w-3.5 h-3.5 text-slate-700" />
-                    </div>
-                    <span className="text-xs font-bold text-slate-800">선택한 향수와의 궁합</span>
+
+                  <div className="flex items-center justify-between text-[11px] bg-white p-2.5 rounded-xl border border-slate-100">
+                    <span className="text-slate-400">향수 궁합</span>
+                    <strong className="text-slate-800 font-extrabold">좋은 궁합 (85점)</strong>
                   </div>
                 </div>
               </div>
@@ -190,7 +220,7 @@ export default function OnboardingLanding({ onStart }: OnboardingLandingProps) {
       </main>
 
       {/* 하단 내비게이션 바 */}
-      <footer className="px-6 py-6 border-t border-slate-100 flex flex-col items-center space-y-4 shrink-0 pb-safe h-28 justify-center">
+      <footer className="px-6 py-6 border-t border-slate-100 flex flex-col items-center space-y-4 shrink-0 pb-safe h-28 justify-center z-10 bg-white">
         {/* 진행 상태 인디케이터 */}
         <div 
           className="flex items-center justify-center space-x-2"
