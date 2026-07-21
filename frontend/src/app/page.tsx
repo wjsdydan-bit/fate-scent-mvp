@@ -21,8 +21,10 @@ export default function Home() {
   const [userInfo, setUserInfo] = useState<any>(null);
   const [compatData, setCompatData] = useState<any>(null);
   const [recommendData, setRecommendData] = useState<any>(null);
+  const [apiError, setApiError] = useState<string>("");
 
   const handleInputSubmit = async (data: any) => {
+    setApiError("");
     setUserInfo(data);
     setStep(2); // Loading 1
 
@@ -38,12 +40,13 @@ export default function Home() {
       setStep(3); // Result 1
     } catch (error) {
       console.error(error);
-      alert("오류가 발생했습니다. 다시 시도해주세요.");
+      setApiError("분석 중 일시적인 오류가 발생했습니다. 입력 정보를 확인하고 다시 시도해주세요.");
       setStep(1);
     }
   };
 
   const handleDirectRecommendSubmit = async (data: any) => {
+    setApiError("");
     setUserInfo(data);
     setStep(5); // Loading 2 (바로 추천용 로딩)
 
@@ -60,12 +63,13 @@ export default function Home() {
       setStep(6); // Result 2
     } catch (error) {
       console.error("Direct Recommend API Error:", error);
-      alert("오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+      setApiError("추천 중 일시적인 오류가 발생했습니다. 잠시 후 다시 버튼을 눌러주세요.");
       setStep(1);
     }
   };
 
   const handleRecommendSubmit = async (recommendRequestData: any) => {
+    setApiError("");
     setUserInfo((prev: any) => ({
       ...prev,
       interests: recommendRequestData.interests || [],
@@ -92,12 +96,13 @@ export default function Home() {
       setStep(6); // Result 2
     } catch (error) {
       console.error("Recommend API Error:", error);
-      alert("오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+      setApiError("결과를 가져오는 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.");
       setStep(4);
     }
   };
 
   const resetAll = () => {
+    setApiError("");
     setStep(0);
     setUserInfo(null);
     setCompatData(null);
@@ -150,9 +155,9 @@ export default function Home() {
               </div>
 
               {(!userInfo || userInfo.flow !== 'direct') ? (
-                <InputForm onSubmit={handleInputSubmit} />
+                <InputForm onSubmit={handleInputSubmit} userInfo={userInfo} apiError={apiError} />
               ) : (
-                <DirectRecommendForm onSubmit={handleDirectRecommendSubmit} />
+                <DirectRecommendForm onSubmit={handleDirectRecommendSubmit} userInfo={userInfo} apiError={apiError} />
               )}
             </div>
           )}
@@ -161,7 +166,7 @@ export default function Home() {
             <CompatibilityResult
               data={compatData}
               userInfo={userInfo}
-              onNext={() => setStep(4)}
+              onNext={() => { setApiError(""); setStep(4); }}
               onReset={resetAll}
             />
           )}
@@ -170,6 +175,7 @@ export default function Home() {
               userInfo={userInfo}
               onNext={handleRecommendSubmit}
               onReset={() => setStep(3)}
+              apiError={apiError}
             />
           )}
           {step === 5 && <LoadingStep2 />}

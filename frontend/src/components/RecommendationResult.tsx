@@ -7,6 +7,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PhotoShareOverlay from "./PhotoShareOverlay";
+import { 
+    Sprout, Flame, Mountain, Gem, Droplets, 
+    Sparkles, Info, Share2, Award, SprayCan, AlertCircle, RefreshCw,
+    ChevronDown, ChevronUp 
+} from "lucide-react";
 
 const NOTE_KO_MAP: Record<string, string> = {
     "bergamot": "베르가못", "lemon": "레몬", "orange": "오렌지", "grapefruit": "자몽",
@@ -38,7 +43,6 @@ const NOTE_KO_MAP: Record<string, string> = {
 function translateNotes(notes: string): string {
     if (!notes) return "";
     let result = notes;
-    // Sort by length descending so multi-word entries match first
     const sorted = Object.entries(NOTE_KO_MAP).sort((a, b) => b[0].length - a[0].length);
     sorted.forEach(([en, ko]) => {
         const re = new RegExp(en.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
@@ -50,8 +54,12 @@ function translateNotes(notes: string): string {
 const ELEMENTS_KO: Record<string, string> = {
     Wood: "목(나무)", Fire: "화(불)", Earth: "토(흙)", Metal: "금(쇠)", Water: "수(물)"
 };
-const ELEMENT_EMOJI: Record<string, string> = {
-    Wood: "🌳", Fire: "🔥", Earth: "🏔️", Metal: "⚙️", Water: "💧"
+const ELEMENT_EMOJI: Record<string, React.ReactNode> = {
+    Wood: <Sprout className="w-5 h-5 text-green-500" strokeWidth={1.75} aria-hidden="true" />,
+    Fire: <Flame className="w-5 h-5 text-red-500" strokeWidth={1.75} aria-hidden="true" />,
+    Earth: <Mountain className="w-5 h-5 text-amber-600" strokeWidth={1.75} aria-hidden="true" />,
+    Metal: <Gem className="w-5 h-5 text-slate-400" strokeWidth={1.75} aria-hidden="true" />,
+    Water: <Droplets className="w-5 h-5 text-blue-500" strokeWidth={1.75} aria-hidden="true" />
 };
 const ELEMENT_KEYWORDS: Record<string, string[]> = {
     Wood: [
@@ -80,21 +88,13 @@ const ELEMENT_KEYWORDS: Record<string, string[]> = {
     ]
 };
 
-function getNoteElementHints(notes: string): { elem: string; ko: string; emoji: string; matches: string[] }[] {
-    if (!notes) return [];
-    const result: { elem: string; ko: string; emoji: string; matches: string[] }[] = [];
-    Object.keys(ELEMENTS_KO).forEach((elem) => {
-        const matched = ELEMENT_KEYWORDS[elem].filter((kw) => notes.toLowerCase().includes(kw));
-        if (matched.length > 0) {
-            result.push({ elem, ko: ELEMENTS_KO[elem], emoji: ELEMENT_EMOJI[elem], matches: matched.slice(0, 2) });
-        }
-    });
-    return result;
-}
-
 export default function RecommendationResult({ data, userInfo, onReset }: any) {
     const shareRef = useRef<HTMLDivElement>(null);
     const [showPhotoOverlay, setShowPhotoOverlay] = useState(false);
+    // 각 향수 카드별 아코디언(더보기) 토글 상태
+    const [expandedIndex, setExpandedIndex] = useState<Record<number, boolean>>({});
+    // 파비콘 로딩 에러 상태
+    const [faviconError, setFaviconError] = useState<Record<number, boolean>>({});
 
     if (!data) return null;
 
@@ -107,10 +107,15 @@ export default function RecommendationResult({ data, userInfo, onReset }: any) {
     };
 
     const bestPerfume = top3[0] || {};
-    const weakElement = userInfo?.saju_data?.weakest || reading_result?.saju_data?.weakest || "";
-    const strongElement = userInfo?.saju_data?.strongest || reading_result?.saju_data?.strongest || "";
-    const weakElementKo = ELEMENTS_KO[weakElement] || weakElement;
-    const strongElementKo = ELEMENTS_KO[strongElement] || strongElement;
+
+    const weakElements: string[] = userInfo?.saju_data?.weakest_elements || reading_result?.saju_data?.weakest_elements || 
+        [userInfo?.saju_data?.weakest || reading_result?.saju_data?.weakest || ""].filter(Boolean);
+    const strongElements: string[] = userInfo?.saju_data?.strongest_elements || reading_result?.saju_data?.strongest_elements || 
+        [userInfo?.saju_data?.strongest || reading_result?.saju_data?.strongest || ""].filter(Boolean);
+    const weakElement = weakElements[0] || "";
+    const strongElement = strongElements[0] || "";
+    const weakElementKo = weakElements.map(e => ELEMENTS_KO[e] || e).join("·") || weakElement;
+    const strongElementKo = strongElements.map(e => ELEMENTS_KO[e] || e).join("·") || strongElement;
     const genderEmoji = userInfo?.gender === "여성" ? "🙋‍♀️" : "🙋‍♂️";
     const interestsList: string[] = userInfo?.interests || [];
 
@@ -118,29 +123,23 @@ export default function RecommendationResult({ data, userInfo, onReset }: any) {
         if (!shareRef.current) return;
         try {
             const { toPng } = await import("html-to-image");
-
-            // Allow DOM to settle
             await new Promise(resolve => setTimeout(resolve, 50));
-
             const filter = (node: HTMLElement) => {
                 if (node.classList && node.classList.contains('share-favicon')) {
                     return false;
                 }
                 return true;
             };
-
             const dataUrl = await toPng(shareRef.current, {
                 pixelRatio: 2,
                 backgroundColor: "#ffffff",
                 filter: filter as any
             });
-
             const link = document.createElement("a");
             const filename = `fatescent_${userInfo?.user_name || "결과"}.png`;
-
             link.download = filename;
             link.href = dataUrl;
-            link.target = "_blank"; // Helpful for iOS Safari
+            link.target = "_blank";
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -150,9 +149,14 @@ export default function RecommendationResult({ data, userInfo, onReset }: any) {
         }
     };
 
-    // Split primary luck analysis into separate interest items if possible
-    const primaryText = luck_analysis?.primary || "";
+    // 요약 한두 문장 축소
+    const displaySummary = summary 
+        ? summary.split(/[.!?]/).filter(Boolean).slice(0, 2).map((s: string) => s.trim()).join(". ") + "." 
+        : `당신의 사주는 ${strongElementKo} 기운이 강하고 ${weakElementKo} 기운이 부족해요. 추천된 향수가 오행의 균형을 보완하는 데 도움을 줍니다.`;
 
+    const toggleExpand = (idx: number) => {
+        setExpandedIndex(prev => ({ ...prev, [idx]: !prev[idx] }));
+    };
 
     return (
         <div className="space-y-6 pb-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -173,20 +177,20 @@ export default function RecommendationResult({ data, userInfo, onReset }: any) {
 
             {/* Header */}
             <div className="text-center space-y-3 mt-4 bg-slate-50 p-6 rounded-[2rem] border border-slate-100">
-                <div className="text-3xl mb-2">🔮</div>
-                <h2 className="text-xl font-extrabold text-slate-900 tracking-tight leading-snug">
+                <Sparkles className="w-8 h-8 text-orange-500 mx-auto mb-2" strokeWidth={1.75} aria-hidden="true" />
+                <h2 className="text-xl font-extrabold text-slate-900 tracking-tight leading-snug break-keep">
                     {hero_title}
                 </h2>
                 <p className="text-sm text-slate-500 bg-white py-1.5 px-4 rounded-full inline-block font-bold shadow-sm border border-slate-100">
-                    {userInfo?.user_name}님의 사주 향수 처방전
+                    {userInfo?.user_name}님의 사주 향수 분석
                 </p>
             </div>
 
             <Tabs defaultValue="summary" className="w-full">
                 <TabsList className="grid w-full grid-cols-3 bg-slate-100 p-1.5 rounded-2xl">
-                    <TabsTrigger value="summary" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-orange-600 font-bold text-xs">✨ 요약</TabsTrigger>
-                    <TabsTrigger value="analysis" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-orange-600 font-bold text-xs">📜 사주풀이</TabsTrigger>
-                    <TabsTrigger value="share" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-orange-600 font-bold text-xs">📤 공유</TabsTrigger>
+                    <TabsTrigger value="summary" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-orange-600 font-bold text-xs"><Sparkles className="w-3.5 h-3.5 mr-1" strokeWidth={2} aria-hidden="true" />요약</TabsTrigger>
+                    <TabsTrigger value="analysis" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-orange-600 font-bold text-xs"><Info className="w-3.5 h-3.5 mr-1" strokeWidth={2} aria-hidden="true" />사주풀이</TabsTrigger>
+                    <TabsTrigger value="share" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-orange-600 font-bold text-xs"><Share2 className="w-3.5 h-3.5 mr-1" strokeWidth={2} aria-hidden="true" />공유</TabsTrigger>
                 </TabsList>
 
                 {/* ─── TAB 1: SUMMARY ─── */}
@@ -194,92 +198,164 @@ export default function RecommendationResult({ data, userInfo, onReset }: any) {
 
                     {/* 핵심 요약 */}
                     <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100">
-                        <h3 className="font-exrabold text-slate-900 mb-3 flex items-center gap-2 font-bold">
-                            <span className="bg-white p-1.5 rounded-xl shadow-sm border border-slate-100">💡</span> 핵심 요약
+                        <h3 className="font-extrabold text-slate-900 mb-2 flex items-center gap-2 font-bold">
+                            <span className="bg-white p-1.5 rounded-xl shadow-sm border border-slate-100 flex items-center justify-center"><Info className="w-4 h-4 text-slate-700" strokeWidth={2} aria-hidden="true" /></span> 핵심 요약
                         </h3>
-                        <p className="text-[13px] text-slate-600 leading-[1.8] whitespace-pre-line font-medium">
-                            {summary || `당신의 사주는 ${strongElementKo} 기운이 강하고 ${weakElementKo} 기운이 부족해요. 추천된 향수들은 이 부족한 기운을 채워주는 노트로 구성되어 있어, 사주의 균형을 맞추는 데 도움이 됩니다.`}
+                        <p className="text-[13px] text-slate-600 leading-[1.8] font-medium">
+                            {displaySummary}
                         </p>
                     </div>
 
-
-
                     {/* 추천 향수 Top 3 */}
                     <div className="space-y-4">
-                        <h3 className="font-bold text-slate-800 pl-1">🏆 추천 향수 Top 3</h3>
+                        <h3 className="font-bold text-slate-800 pl-1 flex items-center gap-1.5">
+                            <Award className="w-5 h-5 text-orange-500" strokeWidth={2} aria-hidden="true" /> 추천 향수 Top 3
+                        </h3>
                         {top3.map((perfume: any, idx: number) => {
                             const topKo = translateNotes(perfume.top_ko || perfume.Top || "");
                             const midKo = translateNotes(perfume.middle_ko || perfume.Middle || "");
                             const baseKo = translateNotes(perfume.base_ko || perfume.Base || "");
                             const notesKo = translateNotes(perfume.notes_ko || perfume.Notes || "");
+                            const compactNotes = [topKo, midKo, baseKo].filter(Boolean).join(" - ");
+                            const displayNotes = compactNotes || notesKo || "매치 향조 포함";
+                            const isBest = idx === 0;
+                            const isExpanded = expandedIndex[idx] || false;
 
-
-                            const cardColors = ["bg-slate-100", "bg-slate-50", "bg-white border-b"];
-
-                            return (
-                                <Card key={idx} className="border border-slate-100 shadow-sm flex flex-col overflow-hidden rounded-3xl transition hover:shadow-md">
-                                    <div className={`${cardColors[idx]} px-5 py-4 flex justify-between items-center border-b border-slate-100`}>
-                                        <div className="font-black text-slate-800 text-lg flex items-center gap-2">
-                                            {["🥇", "🥈", "🥉"][idx]}
-                                            <img
-                                                src={`https://www.google.com/s2/favicons?domain=${(perfume.Brand || perfume.brand || "").toLowerCase().replace(/\s+/g, '')}.com&sz=128`}
-                                                onError={(e) => e.currentTarget.style.display = 'none'}
-                                                className="w-5 h-5 rounded-full shadow-sm object-cover bg-white"
-                                                alt=""
-                                            />
-                                            {perfume.Brand || perfume.brand}
+                            if (isBest) {
+                                // 1위 향수 (🥇 Best Match로 크게 강조)
+                                return (
+                                    <Card key={idx} className="border border-orange-200/80 shadow-md flex flex-col overflow-hidden rounded-[2rem] transition-all bg-gradient-to-b from-orange-50/10 to-white">
+                                        <div className="bg-orange-100/60 px-5 py-4 flex justify-between items-center border-b border-orange-100">
+                                            <div className="font-black text-orange-900 text-lg flex items-center gap-2 truncate pr-2">
+                                                <Award className="w-6 h-6 text-orange-600" strokeWidth={2} aria-hidden="true" /> Best Match
+                                                {faviconError[idx] ? (
+                                                    <SprayCan className="w-4 h-4 text-slate-400 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+                                                ) : (
+                                                    <img
+                                                        src={`https://www.google.com/s2/favicons?domain=${(perfume.Brand || perfume.brand || "").toLowerCase().replace(/\s+/g, '')}.com&sz=128`}
+                                                        onError={() => setFaviconError(prev => ({ ...prev, [idx]: true }))}
+                                                        className="w-5 h-5 rounded-full shadow-sm object-cover bg-white shrink-0"
+                                                        alt=""
+                                                    />
+                                                )}
+                                                <span className="truncate">{perfume.Brand || perfume.brand}</span>
+                                            </div>
+                                            <span className="text-[11px] font-extrabold text-orange-700 bg-orange-200/50 py-1 px-3 rounded-full shrink-0">Top 1</span>
                                         </div>
-                                        <div className="flex gap-1 flex-wrap justify-end">
-                                            {/* Badges removed as per request #5 */}
-                                        </div>
-                                    </div>
-                                    <CardContent className="p-4 space-y-3 bg-white">
-                                        <div className="flex gap-4 items-center">
-                                            {perfume.image_url ? (
-                                                <img src={perfume.image_url} alt={perfume.Name || perfume.name} className="w-16 h-16 object-contain rounded-xl border p-1 shadow-sm bg-slate-50 shrink-0" />
-                                            ) : (
-                                                <div className="w-16 h-16 bg-slate-50 border rounded-xl flex items-center justify-center text-3xl shadow-sm shrink-0">🧴</div>
+                                        <CardContent className="p-5 space-y-4 bg-white">
+                                            <div className="flex gap-4 items-center">
+                                                {perfume.image_url ? (
+                                                    <img src={perfume.image_url} alt={perfume.Name || perfume.name} className="w-20 h-20 object-contain rounded-xl border p-1 shadow-sm bg-slate-50 shrink-0" />
+                                                ) : (
+                                                    <div className="w-20 h-20 bg-slate-50 border rounded-xl flex items-center justify-center shadow-sm shrink-0"><SprayCan className="w-10 h-10 text-slate-300" strokeWidth={1.5} aria-hidden="true" /></div>
+                                                )}
+                                                <div>
+                                                    <div className="text-xs font-bold text-slate-400 mb-1">{perfume.Brand || perfume.brand}</div>
+                                                    <div className="text-lg font-black text-slate-800 leading-tight">{perfume.Name || perfume.name}</div>
+                                                </div>
+                                            </div>
+
+                                            {/* Notes 상세 정보 */}
+                                            {(topKo || midKo || baseKo) ? (
+                                                <div className="space-y-1.5 text-xs text-slate-600 bg-slate-50/80 p-3.5 rounded-2xl border border-slate-100 break-keep">
+                                                    {topKo && <div className="leading-relaxed"><span className="font-bold text-orange-600 shrink-0">탑</span>&nbsp;{topKo}</div>}
+                                                    {midKo && <div className="leading-relaxed"><span className="font-bold text-slate-700 shrink-0">미들</span>&nbsp;{midKo}</div>}
+                                                    {baseKo && <div className="leading-relaxed"><span className="font-bold text-slate-500 shrink-0">베이스</span>&nbsp;{baseKo}</div>}
+                                                </div>
+                                            ) : notesKo ? (
+                                                <div className="text-xs text-slate-600 bg-slate-50/80 p-3.5 rounded-2xl border border-slate-100 break-keep leading-relaxed">
+                                                    <span className="font-bold text-orange-600 shrink-0">노트</span>&nbsp;{notesKo}
+                                                </div>
+                                            ) : null}
+
+                                            {/* AI Match Reason 아코디언 */}
+                                            {perfume.element_match_reason && (
+                                                <div className="mt-3 p-4 bg-orange-50/40 rounded-2xl border border-orange-100">
+                                                    <h4 className="text-xs font-bold text-orange-950/80 mb-1.5 flex items-center gap-1">
+                                                        <Sparkles className="w-4 h-4 text-orange-500" strokeWidth={2} aria-hidden="true" /> 매칭 포인트
+                                                    </h4>
+                                                    <p className={`text-[13px] text-orange-950/80 leading-[1.8] font-medium transition-all break-keep ${isExpanded ? "" : "line-clamp-2"}`}>
+                                                        {perfume.element_match_reason}
+                                                    </p>
+                                                    <button 
+                                                        onClick={() => toggleExpand(idx)}
+                                                        className="text-xs font-bold text-orange-600 hover:text-orange-700 mt-2 flex items-center gap-1 w-full text-left py-2 active:bg-orange-100/50 rounded-lg"
+                                                    >
+                                                        {isExpanded ? (
+                                                            <><ChevronUp className="w-4 h-4" strokeWidth={2} aria-hidden="true" /> 추천 사유 접기</>
+                                                        ) : (
+                                                            <><ChevronDown className="w-4 h-4" strokeWidth={2} aria-hidden="true" /> 추천 사유 더 보기</>
+                                                        )}
+                                                    </button>
+                                                </div>
                                             )}
-                                            <div className="text-base font-bold text-slate-700 leading-tight">{perfume.Name || perfume.name}</div>
+
+                                            <Button
+                                                variant="default"
+                                                className="w-full mt-2 text-xs font-extrabold bg-orange-500 hover:bg-orange-600 text-white rounded-xl h-12 shadow-sm"
+                                                onClick={() => handleSearch(perfume.Brand || perfume.brand || "", perfume.Name || perfume.name || "")}
+                                            >
+                                                🛒 네이버 최저가 검색 및 구매
+                                            </Button>
+                                        </CardContent>
+                                    </Card>
+                                );
+                            } else {
+                                // 2·3위 향수 (작은 보조 카드로 표시)
+                                return (
+                                    <Card key={idx} className="border border-slate-100 shadow-sm flex flex-col overflow-hidden rounded-2xl bg-white transition hover:shadow-md">
+                                        <div className="bg-slate-50/70 px-4 py-2.5 flex justify-between items-center border-b border-slate-100 text-xs">
+                                            <div className="font-extrabold text-slate-600 flex items-center gap-1.5 truncate">
+                                                <span className="shrink-0 flex items-center gap-1">
+                                                    <Award className="w-4 h-4 text-slate-400" strokeWidth={2} aria-hidden="true" /> {idx}위
+                                                </span>
+                                                <span className="text-slate-400 shrink-0">|</span>
+                                                <span className="truncate font-bold">{perfume.Brand || perfume.brand}</span>
+                                            </div>
+                                            <span className="text-[10px] text-slate-400 font-bold shrink-0 ml-2">보완 추천</span>
                                         </div>
-
-                                        {/* Notes - all korean */}
-                                        {(topKo || midKo || baseKo) ? (
-                                            <div className="space-y-1 text-xs text-slate-600 bg-slate-50/80 p-3.5 rounded-2xl border border-slate-100">
-                                                {topKo && <div><span className="font-bold text-orange-600">탑</span>&nbsp;{topKo}</div>}
-                                                {midKo && <div><span className="font-bold text-slate-700">미들</span>&nbsp;{midKo}</div>}
-                                                {baseKo && <div><span className="font-bold text-slate-500">베이스</span>&nbsp;{baseKo}</div>}
+                                        <CardContent className="p-3.5 space-y-2">
+                                            <div className="flex gap-3 items-center">
+                                                {perfume.image_url ? (
+                                                    <img src={perfume.image_url} alt={perfume.Name || perfume.name} className="w-11 h-11 object-contain rounded-lg border p-0.5 bg-slate-50 shrink-0" />
+                                                ) : (
+                                                    <div className="w-11 h-11 bg-slate-50 border rounded-lg flex items-center justify-center shrink-0"><SprayCan className="w-5 h-5 text-slate-300" strokeWidth={1.5} aria-hidden="true" /></div>
+                                                )}
+                                                <div className="truncate flex-1">
+                                                    <div className="text-xs font-bold text-slate-700 leading-tight truncate">{perfume.Name || perfume.name}</div>
+                                                    <div className="text-[10px] text-slate-400 truncate mt-0.5">{displayNotes}</div>
+                                                </div>
+                                                <Button
+                                                    variant="outline"
+                                                    className="text-[10px] font-bold border-slate-200 text-slate-600 hover:bg-slate-50 rounded-lg px-2.5 h-8 shrink-0"
+                                                    onClick={() => handleSearch(perfume.Brand || perfume.brand || "", perfume.Name || perfume.name || "")}
+                                                >
+                                                    검색
+                                                </Button>
                                             </div>
-                                        ) : notesKo ? (
-                                            <div className="text-xs text-slate-600 bg-slate-50/80 p-3.5 rounded-2xl border border-slate-100">
-                                                <span className="font-bold text-orange-600">노트</span>&nbsp;{notesKo}
-                                            </div>
-                                        ) : null}
 
-
-
-                                        {/* AI Element Match Reason (7~8 lines) */}
-                                        {perfume.element_match_reason && (
-                                            <div className="mt-3 p-4 bg-orange-50/50 rounded-2xl border border-orange-100">
-                                                <h4 className="text-xs font-bold text-orange-900 mb-2 flex items-center gap-1">
-                                                    <span>✨</span> 맞춤 매칭 포인트
-                                                </h4>
-                                                <p className="text-[13px] text-orange-900/80 leading-[1.8] whitespace-pre-line font-medium">
-                                                    {perfume.element_match_reason}
-                                                </p>
-                                            </div>
-                                        )}
-
-                                        <Button
-                                            variant="outline"
-                                            className="w-full mt-2 text-xs font-bold border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl h-10"
-                                            onClick={() => handleSearch(perfume.Brand || perfume.brand || "", perfume.Name || perfume.name || "")}
-                                        >
-                                            🛒 네이버에서 검색하기
-                                        </Button>
-                                    </CardContent>
-                                </Card>
-                            );
+                                            {/* 2·3위 AI 설명 아코디언 */}
+                                            {perfume.element_match_reason && (
+                                                <div className="bg-slate-50 rounded-lg p-2.5 border border-slate-100 text-[11px] text-slate-500">
+                                                    <p className={`leading-relaxed break-keep ${isExpanded ? "" : "line-clamp-1"}`}>
+                                                        {perfume.element_match_reason}
+                                                    </p>
+                                                    <button 
+                                                        onClick={() => toggleExpand(idx)}
+                                                        className="text-[10px] font-bold text-slate-400 hover:text-slate-600 mt-1 flex items-center gap-1 w-full text-left py-1"
+                                                    >
+                                                        {isExpanded ? (
+                                                            <><ChevronUp className="w-3 h-3" strokeWidth={2} aria-hidden="true" /> 접기</>
+                                                        ) : (
+                                                            <><ChevronDown className="w-3 h-3" strokeWidth={2} aria-hidden="true" /> 매칭 사유 보기</>
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                );
+                            }
                         })}
                     </div>
                 </TabsContent>
@@ -288,7 +364,7 @@ export default function RecommendationResult({ data, userInfo, onReset }: any) {
                 <TabsContent value="analysis" className="space-y-4 pt-4 outline-none">
                     <Card className="border shadow-sm border-slate-100 bg-white rounded-[2rem] overflow-hidden">
                         <div className="bg-slate-800 text-white font-bold p-4 flex items-center gap-2">
-                            <span>📜</span> 나의 사주 상세 풀이
+                            <Info className="w-5 h-5 text-slate-300" strokeWidth={2} aria-hidden="true" /> 나의 사주 상세 풀이
                         </div>
                         <CardContent className="p-5 space-y-6 text-sm text-slate-700 leading-[1.85]">
 
@@ -300,29 +376,29 @@ export default function RecommendationResult({ data, userInfo, onReset }: any) {
 
                             {saju_analysis?.advantages && (
                                 <section>
-                                    <h3 className="text-base font-extrabold text-slate-800 border-b-2 border-slate-100 pb-2 mb-3">✨ 강점 — 내가 가진 힘</h3>
+                                    <h3 className="text-base font-extrabold text-slate-800 border-b-2 border-slate-100 pb-2 mb-3 flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-orange-500" strokeWidth={2} aria-hidden="true" /> 강점 — 내가 가진 힘</h3>
                                     <p>{saju_analysis.advantages}</p>
                                 </section>
                             )}
 
                             {saju_analysis?.disadvantages && (
                                 <section>
-                                    <h3 className="text-base font-extrabold text-slate-800 border-b-2 border-slate-100 pb-2 mb-3">⚠️ 주의점 — 과할 때 조심</h3>
+                                    <h3 className="text-base font-extrabold text-slate-800 border-b-2 border-slate-100 pb-2 mb-3 flex items-center gap-1.5"><AlertCircle className="w-4 h-4 text-orange-500" strokeWidth={2} aria-hidden="true" /> 주의점 — 과할 때 조심</h3>
                                     <p>{saju_analysis.disadvantages}</p>
                                 </section>
                             )}
 
                             {saju_analysis?.weakness_signals && (
                                 <section>
-                                    <h3 className="text-base font-extrabold text-slate-800 border-b-2 border-slate-100 pb-2 mb-3">📡 기운 부족 신호</h3>
+                                    <h3 className="text-base font-extrabold text-slate-800 border-b-2 border-slate-100 pb-2 mb-3 flex items-center gap-1.5"><AlertCircle className="w-4 h-4 text-orange-500" strokeWidth={2} aria-hidden="true" /> 기운 부족 신호</h3>
                                     <p>{saju_analysis.weakness_signals}</p>
                                 </section>
                             )}
 
-                            {/* 관심 운 집중 풀이 - 각 운별로 나눠서 (새로운 배열 형식) */}
+                            {/* 관심 운 집중 풀이 */}
                             {Array.isArray(luck_analysis) && luck_analysis.length > 0 && (
                                 <section className="space-y-3">
-                                    <h3 className="text-base font-extrabold text-slate-800 border-b-2 border-slate-100 pb-2 mb-1 text-center">🎯 선택한 운 상세 풀이</h3>
+                                    <h3 className="text-base font-extrabold text-slate-800 border-b-2 border-slate-100 pb-2 mb-1 text-center flex items-center justify-center gap-1.5"><Sparkles className="w-4 h-4 text-orange-500" strokeWidth={2} aria-hidden="true" /> 선택한 운 상세 풀이</h3>
                                     {luck_analysis.map((luck: any, idx: number) => (
                                         <div key={idx} className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
                                             <h4 className="font-extrabold text-slate-800 text-base mb-2">{luck.luck_name}</h4>
@@ -334,10 +410,9 @@ export default function RecommendationResult({ data, userInfo, onReset }: any) {
                                 </section>
                             )}
 
-                            {/* 관심 운 집중 풀이 - 예전 호환성 fallback */}
                             {!Array.isArray(luck_analysis) && interestsList.length > 0 && luck_analysis?.primary && (
                                 <section className="space-y-3 mt-4">
-                                    <h3 className="text-base font-extrabold text-slate-800 border-b-2 border-slate-100 pb-2 mb-1 text-center">🎯 선택한 운 상세 풀이</h3>
+                                    <h3 className="text-base font-extrabold text-slate-800 border-b-2 border-slate-100 pb-2 mb-1 text-center flex items-center justify-center gap-1.5"><Sparkles className="w-4 h-4 text-orange-500" strokeWidth={2} aria-hidden="true" /> 선택한 운 상세 풀이</h3>
                                     {interestsList.map((interest: string, idx: number) => (
                                         <div key={idx} className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
                                             <h4 className="font-extrabold text-slate-800 text-base mb-2">{interest}</h4>
@@ -351,15 +426,15 @@ export default function RecommendationResult({ data, userInfo, onReset }: any) {
 
                             {luck_analysis?.secondary && interestsList.length <= 1 && (
                                 <section className="mt-4">
-                                    <h3 className="text-base font-extrabold text-slate-800 border-b-2 border-slate-100 pb-2 mb-3">🌊 전체 운의 흐름</h3>
+                                    <h3 className="text-base font-extrabold text-slate-800 border-b-2 border-slate-100 pb-2 mb-3 flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-orange-500" strokeWidth={2} aria-hidden="true" /> 전체 운의 흐름</h3>
                                     <p>{luck_analysis.secondary}</p>
                                 </section>
                             )}
 
-                            {/* 향수 처방 효과 - 상세하게 */}
+                            {/* 향수 처방 효과 */}
                             {(saju_analysis?.balance_effect || saju_analysis?.perfume_effect) && (
                                 <section className="bg-slate-100/50 rounded-2xl p-5 border border-slate-100 mt-4">
-                                    <h3 className="text-base font-extrabold text-slate-900 mb-3">🧴 향수 처방 효과</h3>
+                                    <h3 className="text-base font-extrabold text-slate-900 mb-3 flex items-center gap-1.5"><SprayCan className="w-5 h-5 text-slate-600" strokeWidth={2} aria-hidden="true" /> 향수 처방 효과</h3>
                                     {saju_analysis.balance_effect && (
                                         <p className="text-slate-700 leading-[1.9] mb-3">{saju_analysis.balance_effect}</p>
                                     )}
@@ -376,13 +451,9 @@ export default function RecommendationResult({ data, userInfo, onReset }: any) {
                 {/* ─── TAB 3: SHARE ─── */}
                 <TabsContent value="share" className="pt-4 outline-none">
                     <div className="flex flex-col items-center gap-4">
-
-                        {/* 캡쳐 대상 카드: 궁합 결과 화면(CompatibilityResult) 테마와 유사하게 수정 */}
                         <div ref={shareRef} className="w-full max-w-[360px]">
-                            {/* Hero Header 유사한 영역 */}
                             <div className="text-center space-y-4 bg-orange-50 p-6 rounded-[2rem] border border-orange-100 shadow-sm relative overflow-hidden">
-                                <div className="text-sm font-bold text-slate-500 tracking-wide">나의 사주 향수 처방전</div>
-
+                                <div className="text-sm font-bold text-slate-500 tracking-wide">나의 사주 향수 매칭</div>
                                 <div className="flex justify-center items-center gap-4 mt-2">
                                     <div className="flex flex-col items-center">
                                         <span className="text-3xl bg-white border p-3 rounded-full shadow-sm mb-2 aspect-square flex items-center justify-center">{genderEmoji}</span>
@@ -393,7 +464,7 @@ export default function RecommendationResult({ data, userInfo, onReset }: any) {
                                         {bestPerfume.image_url ? (
                                             <img src={bestPerfume.image_url} alt={bestPerfume.name} crossOrigin="anonymous" className="w-14 h-14 object-contain bg-white border p-1 rounded-full shadow-sm mb-2" />
                                         ) : (
-                                            <span className="text-3xl bg-white border p-3 rounded-full shadow-sm mb-2 aspect-square flex items-center justify-center">🧴</span>
+                                            <span className="bg-white border p-3 rounded-full shadow-sm mb-2 aspect-square flex items-center justify-center"><SprayCan className="w-7 h-7 text-slate-300" strokeWidth={1.5} aria-hidden="true" /></span>
                                         )}
                                         <div className="flex items-center gap-1 justify-center w-full">
                                             <img
@@ -413,28 +484,26 @@ export default function RecommendationResult({ data, userInfo, onReset }: any) {
                                     {hero_title}
                                 </div>
 
-                                {/* 기운 Summary (나의 강한 기운 / 부족한 기운) */}
                                 <div className="grid grid-cols-2 gap-2 mt-4">
                                     <div className="bg-white/80 backdrop-blur-sm border border-slate-100 p-3 rounded-2xl flex flex-col items-center shadow-sm">
                                         <span className="text-[10px] font-bold text-slate-500 mb-1">내 강한 기운</span>
-                                        <span className="text-xl mb-0.5">{ELEMENT_EMOJI[strongElement]}</span>
-                                        <span className="font-extrabold text-slate-800 text-xs">{strongElementKo}</span>
+                                        <span className="mb-0.5 flex flex-wrap justify-center gap-0.5">{strongElements.map((e, i) => <span key={i}>{ELEMENT_EMOJI[e]}</span>)}</span>
+                                        <span className="font-extrabold text-slate-800 text-xs text-center break-keep">{strongElementKo}</span>
                                     </div>
                                     <div className="bg-white/80 backdrop-blur-sm border border-slate-100 p-3 rounded-2xl flex flex-col items-center shadow-sm">
                                         <span className="text-[10px] font-bold text-slate-500 mb-1">내 부족한 기운</span>
-                                        <span className="text-xl mb-0.5">{ELEMENT_EMOJI[weakElement]}</span>
-                                        <span className="font-extrabold text-slate-800 text-xs">{weakElementKo}</span>
+                                        <span className="mb-0.5 flex flex-wrap justify-center gap-0.5">{weakElements.map((e, i) => <span key={i}>{ELEMENT_EMOJI[e]}</span>)}</span>
+                                        <span className="font-extrabold text-slate-800 text-xs text-center break-keep">{weakElementKo}</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* 캡쳐 버튼 */}
                         <Button
                             onClick={() => setShowPhotoOverlay(true)}
                             className="w-full max-w-[360px] h-16 text-base font-extrabold rounded-2xl bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white shadow-lg shadow-fuchsia-500/30 transition-all active:scale-95 mt-4 flex items-center justify-center gap-2"
                         >
-                            <span className="text-xl">📸</span> 내 사진에 결과 입히기
+                            <Share2 className="w-5 h-5 mr-1" strokeWidth={2} aria-hidden="true" /> 내 사진에 결과 입히기
                         </Button>
                         <Button
                             onClick={handleShareCapture}
@@ -448,8 +517,8 @@ export default function RecommendationResult({ data, userInfo, onReset }: any) {
             </Tabs>
 
             <div className="pt-6 text-center pb-6 border-t mt-6 border-slate-100">
-                <Button onClick={onReset} variant="outline" className="text-slate-500 font-bold hover:bg-slate-50 rounded-2xl px-8 h-12 border-slate-200">
-                    처음부터 다시 검사하기
+                <Button onClick={onReset} variant="outline" className="text-slate-500 font-bold hover:bg-slate-50 rounded-2xl px-8 h-12 border-slate-200 flex items-center gap-2 mx-auto">
+                    <RefreshCw className="w-4 h-4" strokeWidth={2} aria-hidden="true" /> 처음부터 다시 검사하기
                 </Button>
             </div>
         </div>

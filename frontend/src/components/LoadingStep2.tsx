@@ -1,19 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
-
+import { AlertCircle } from "lucide-react";
 export default function LoadingStep2() {
     const [stepText, setStepText] = useState("사주팔자 스캔 완료! 👀");
     const [displayText, setDisplayText] = useState("");
 
     useEffect(() => {
         const steps = [
-            { time: 1500, text: "넘치는 기운 덜어낼 향수 찾는 중… 🔎" },
-            { time: 3000, text: "부족한 매력 채워줄 노트 고르는 중… 🧪" },
-            { time: 4500, text: "운명적인 향수 리스트업 중… 📝" },
-            { time: 6000, text: "최고의 궁합 3대장 선발 중… 🏆" },
-            { time: 8000, text: "분석 결과를 정성껏 쓰는 중… ✍️" },
-            { time: 10000, text: "타자 진짜 빨리 치고 있어요! 조금만요! 💦" },
+            { time: 1500, text: "사주 오행에 어울리는 향수를 찾는 중… 🔎" },
+            { time: 3500, text: "사용자님의 취향에 맞는 노트를 고르고 있어요… 🧪" },
+            { time: 6000, text: "가장 운명적인 향수 3가지를 선발하는 중… 🏆" },
+            { time: 8500, text: "AI가 맞춤형 사주 향수 풀이를 작성하고 있습니다… ✍️" },
+            { time: 11000, text: "조금만 더 기다려주세요! ✨" },
         ];
         const timers = steps.map(s => setTimeout(() => setStepText(s.text), s.time));
         return () => timers.forEach(clearTimeout);
@@ -45,7 +44,9 @@ export default function LoadingStep2() {
                     {displayText}
                     <span className="animate-pulse text-orange-500 ml-0.5">|</span>
                 </h2>
-                <p className="text-sm text-slate-500 mt-1 text-center">⚠️ 새로고침하지 마세요 🙏</p>
+                <p className="text-sm text-slate-500 mt-2 flex items-center justify-center gap-1 font-medium" aria-live="polite">
+                    <AlertCircle className="w-4 h-4 text-slate-400" strokeWidth={2} aria-hidden="true" /> AI 분석에는 약 5~10초가 소요됩니다
+                </p>
             </div>
         </div>
     );

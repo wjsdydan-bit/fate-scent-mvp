@@ -1,30 +1,74 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List
+from dataclasses import dataclass
+import datetime
 import pandas as pd
+
+class CompatResultSchema(BaseModel):
+    one_liner: str
+    score_comment: str
+    good_reasons: List[str]
+    bad_reasons: List[str]
+    perf_element_summary: str
+    compatibility_detail: str
+
+class SajuAnalysisSchema(BaseModel):
+    overview: str
+    advantages: str
+    disadvantages: str
+    weakness_signals: str
+    balance_effect: str
+    perfume_effect: str
+
+class LuckAnalysisSchema(BaseModel):
+    luck_name: str
+    detail: str
+
+class PerfumeReadingSchema(BaseModel):
+    top: str
+    middle: str
+    base: str
+    element_match_reason: str
+
+class ReadingResultSchema(BaseModel):
+    hero_title: str
+    summary: str
+    saju_analysis: SajuAnalysisSchema
+    luck_analysis: List[LuckAnalysisSchema]
+    perfumes: List[PerfumeReadingSchema]
 import math
 import os
 import json
 import asyncio
 import time
+import re
 
 from dotenv import load_dotenv
-load_dotenv()
 
 from korean_lunar_calendar import KoreanLunarCalendar
 from duckduckgo_search import DDGS
 try:
-    from openai import AsyncOpenAI
-    OPENAI_SDK_AVAILABLE = True
+    from google import genai
+    from google.genai import types
+    GEMINI_SDK_AVAILABLE = True
 except Exception:
-    OPENAI_SDK_AVAILABLE = False
+    GEMINI_SDK_AVAILABLE = False
+
+GEMINI_MODEL_NAME = "gemini-flash-latest"
+GEMINI_TIMEOUT_MS = 30_000
 
 app = FastAPI(title="Fate Scent API v2")
 
+frontend_urls_env = os.environ.get("FRONTEND_URLS", "http://localhost:3000")
+allowed_origins = [url.strip() for url in frontend_urls_env.split(",") if url.strip()]
+if not allowed_origins:
+    allowed_origins = ["http://localhost:3000"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], 
+    allow_origins=allowed_origins, 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -85,11 +129,18 @@ FAMOUS_BRANDS = [
     "Tom Ford", "Hermes", "Creed", "Penhaligon", "Acqua di Parma"
 ]
 
+
+# Load environment variables explicitly before any initialization
+base_dir = os.path.dirname(os.path.abspath(__file__))
+env_path = os.path.join(base_dir, ".env")
+if os.path.exists(env_path):
+    load_dotenv(env_path)
+
 client = None
-if OPENAI_SDK_AVAILABLE:
-    api_key = os.environ.get("OPENAI_API_KEY")
+if GEMINI_SDK_AVAILABLE:
+    api_key = os.environ.get("GEMINI_API_KEY")
     if api_key:
-        client = AsyncOpenAI(api_key=api_key)
+        client = genai.Client(api_key=api_key, http_options=types.HttpOptions(timeout=GEMINI_TIMEOUT_MS))
 
 df = pd.DataFrame()
 
@@ -142,35 +193,284 @@ def load_data():
     df = temp_df.drop_duplicates(subset=drop_keys).reset_index(drop=True)
     print(f"Loaded {len(df)} perfumes successfully.")
 
-load_data()
-
 # =========================================================
 # UTILITIES AND LOGIC
 # =========================================================
+
+def validate_birth_date(year: int, month: int, day: int):
+    """생년월일 유효성 검증. 유효하지 않으면 HTTPException(422) 발생."""
+    try:
+        datetime.date(year, month, day)
+    except (ValueError, OverflowError):
+        raise HTTPException(
+            status_code=422,
+            detail="유효하지 않은 생년월일입니다. 날짜를 다시 확인해주세요."
+        )
+
+def validate_birth_time(hour: Optional[int], minute: Optional[int]):
+    """출생시간 유효성 검증. 범위를 벗어나면 HTTPException(422) 발생."""
+    if hour is not None and not (0 <= hour <= 23):
+        raise HTTPException(
+            status_code=422,
+            detail="유효하지 않은 출생시간입니다. 시(hour)는 0~23 범위여야 합니다."
+        )
+    if minute is not None and not (0 <= minute <= 59):
+        raise HTTPException(
+            status_code=422,
+            detail="유효하지 않은 출생시간입니다. 분(minute)은 0~59 범위여야 합니다."
+        )
+
+def resolve_birth_time_unknown(req) -> bool:
+    """is_birth_time_unknown을 우선 사용하고, 없으면 know_time으로 변환.
+    
+    기존 know_time의 의미:
+      - 프런트엔드 체크박스 라벨: '시간을 몰라요'
+      - knowTime=true → 체크됨 → 출생시간을 모름
+      - know_time=true → 출생시간을 모름 (isBirthTimeUnknown과 동일 의미)
+    따라서 직접 대입이 올바름 (not 불필요).
+    """
+    if hasattr(req, 'is_birth_time_unknown') and req.is_birth_time_unknown is not None:
+        return req.is_birth_time_unknown
+    return req.know_time
+
+@dataclass(frozen=True)
+class RecommendationPolicy:
+    name: str
+    sim_weight: float
+    weak_fill_weight: float
+    preference_weight: float
+    dislike_weight: float
+    brand_bonus: float
+    strong_dislike_threshold: Optional[float]
+    strong_dislike_penalty: float
+    hard_filter_threshold: Optional[float]
+    missing_notes_policy: str  # "keep", "penalty", "exclude"
+
+BASELINE_POLICY = RecommendationPolicy(
+    name="BASELINE",
+    sim_weight=0.55,
+    weak_fill_weight=0.20,
+    preference_weight=0.18,
+    dislike_weight=-0.20,
+    brand_bonus=0.15,
+    strong_dislike_threshold=0.4,
+    strong_dislike_penalty=-0.5,
+    hard_filter_threshold=None,
+    missing_notes_policy="keep"
+)
+
+BALANCED_POLICY = RecommendationPolicy(
+    name="BALANCED",
+    sim_weight=0.40,
+    weak_fill_weight=0.20,
+    preference_weight=0.35,
+    dislike_weight=-0.35,
+    brand_bonus=0.03,
+    strong_dislike_threshold=0.4,
+    strong_dislike_penalty=-0.40,
+    hard_filter_threshold=None,
+    missing_notes_policy="keep"
+)
+
+NO_BRAND_BONUS_POLICY = RecommendationPolicy(
+    name="NO_BRAND_BONUS",
+    sim_weight=0.40,
+    weak_fill_weight=0.20,
+    preference_weight=0.35,
+    dislike_weight=-0.35,
+    brand_bonus=0.00,
+    strong_dislike_threshold=0.4,
+    strong_dislike_penalty=-0.40,
+    hard_filter_threshold=None,
+    missing_notes_policy="keep"
+)
+
+def calculate_final_score(
+    sim: float,
+    weak_fill_avg: float,
+    pref_score: float,
+    dislike_score: float,
+    is_famous_brand: bool,
+    has_note_data: bool,
+    policy: RecommendationPolicy,
+) -> Optional[float]:
+    # 1. 결측 Notes 정책 검사
+    if not has_note_data:
+        if policy.missing_notes_policy == "exclude":
+            return None
+            
+    # 2. 비선호 하드 필터 검사
+    if policy.hard_filter_threshold is not None:
+        if dislike_score >= policy.hard_filter_threshold:
+            return None
+
+    # 3. 기본 점수 합산
+    score = (policy.sim_weight * sim) + (policy.weak_fill_weight * weak_fill_avg)
+    score += (policy.preference_weight * pref_score)
+    score += (policy.dislike_weight * dislike_score)
+    
+    if is_famous_brand:
+        score += policy.brand_bonus
+        
+    # 4. 강한 비선호 추가 패널티 적용
+    if policy.strong_dislike_threshold is not None:
+        if dislike_score >= policy.strong_dislike_threshold:
+            score += policy.strong_dislike_penalty
+
+    # 5. 결측 Notes 패널티
+    if not has_note_data and policy.missing_notes_policy == "penalty":
+        score -= 0.15
+        
+    return score
 
 def safe_text(x):
     if pd.isna(x):
         return ""
     return str(x).strip()
 
-def tags_to_keywords(tags):
-    kws = []
-    for t in tags:
-        kws.extend(TAG_TO_KEYWORDS.get(t, []))
-    return sorted(set([k.lower().strip() for k in kws if k]))
+def normalize_note_token(value: str) -> str:
+    if not value:
+        return ""
+    v = str(value).lower()
+    # 알파벳, 숫자, 공백만 남김
+    v = re.sub(r"[^a-z0-9\s]", " ", v)
+    v = " ".join(v.split())
+    return v
+
+def extract_note_tokens(row) -> set[str]:
+    tokens = set()
+    fields = ["Notes", "Top", "Middle", "Base", "matched_keywords"]
+    for f in fields:
+        val = row.get(f, "")
+        if pd.isna(val) or not val:
+            continue
+        parts = re.split(r"[,/;|\n]", str(val))
+        for p in parts:
+            tok = normalize_note_token(p)
+            if tok:
+                tokens.add(tok)
+    return tokens
 
 def keyword_hit_score(text, keywords):
+    """이전 시그니처 호환용 (혹시 모를 외부 호출 대비)"""
     if not keywords:
         return 0.0
-    text = safe_text(text).lower()
-    hits = sum(1 for kw in keywords if kw in text)
+    text_val = safe_text(text).lower()
+    hits = sum(1 for kw in keywords if kw in text_val)
     return hits / len(keywords)
 
+def keyword_hit_score_for_row(perfume_tokens: set[str], keywords: list[str]) -> float:
+    unique_kws = sorted(set([normalize_note_token(k) for k in keywords if k]))
+    if not unique_kws:
+        return 0.0
+    hits = 0
+    for norm_kw in unique_kws:
+        matched = False
+        for tok in perfume_tokens:
+            pattern = rf"\b{re.escape(norm_kw)}\b"
+            if re.search(pattern, tok):
+                matched = True
+                break
+        if matched:
+            hits += 1
+    return hits / len(unique_kws)
+
+def normalize_gender_filter(value: Optional[str]) -> Optional[str]:
+    if not value:
+        return None
+    v = str(value).strip().lower()
+    if v in ["남성", "남성향", "male", "man", "men"]:
+        return "male"
+    elif v in ["여성", "여성향", "female", "woman", "women"]:
+        return "female"
+    elif v in ["중성", "공용", "남녀공용", "unisex"]:
+        return "unisex"
+    return None
+
+def normalize_brand_name(value: str) -> str:
+    if not value:
+        return ""
+    v = str(value).lower().strip()
+    v = v.replace("&", " and ")
+    v = re.sub(r"[^a-z0-9\s]", "", v)
+    return " ".join(v.split())
+
+def normalize_perfume_name(value: str) -> str:
+    if not value:
+        return ""
+    v = str(value).lower().strip()
+    v = v.replace("&", " and ")
+    v = re.sub(r"\b(eau de parfum|eau de toilette|edp|edt|parfum|cologne|colognes)\b", "", v)
+    v = re.sub(r"\(.*?\)", "", v)
+    v = re.sub(r"[^a-z0-9\s]", "", v)
+    return " ".join(v.split())
+
 def extract_matching_notes(row, target_element, top_n=3):
-    text = f"{safe_text(row.get('matched_keywords', ''))} {safe_text(row.get('Notes', ''))} {safe_text(row.get('Description', ''))}".lower()
+    perfume_tokens = row.get("note_tokens_set")
+    if perfume_tokens is None or not isinstance(perfume_tokens, set):
+        perfume_tokens = extract_note_tokens(row)
     candidates = ELEMENT_KEYWORDS.get(target_element, [])
-    hits = [kw for kw in candidates if kw in text]
+    hits = []
+    for cand in candidates:
+        norm_cand = normalize_note_token(cand)
+        for tok in perfume_tokens:
+            if re.search(rf"\b{re.escape(norm_cand)}\b", tok):
+                hits.append(cand)
+                break
     return hits[:top_n]
+
+def load_data():
+    global df
+    if not os.path.exists(DATA_PATH):
+        print(f"Warning: Data file not found at {DATA_PATH}")
+        return
+
+    try:
+        temp_df = pd.read_csv(DATA_PATH, encoding="utf-8-sig")
+    except Exception:
+        temp_df = pd.read_csv(DATA_PATH)
+
+    text_columns = ["Name", "Brand", "Notes", "Description", "matched_keywords", "Top", "Middle", "Base", "Gender"]
+    for c in text_columns:
+        if c not in temp_df.columns:
+            temp_df[c] = ""
+        temp_df[c] = temp_df[c].fillna("").astype(str)
+
+    for c in ["Female_Score", "Male_Score"]:
+        if c not in temp_df.columns:
+            temp_df[c] = 0.5
+        temp_df[c] = pd.to_numeric(temp_df[c], errors="coerce").fillna(0.5)
+
+    for e in ELEMENTS:
+        if e not in temp_df.columns:
+            temp_df[e] = 0.0
+        temp_df[e] = pd.to_numeric(temp_df[e], errors="coerce").fillna(0.0)
+
+    temp_df["all_text"] = (
+        temp_df["Name"] + " " + temp_df["Brand"] + " " +
+        temp_df["Notes"] + " " + temp_df["matched_keywords"] + " " +
+        temp_df["Top"] + " " + temp_df["Middle"] + " " + temp_df["Base"] + " " +
+        temp_df["Gender"]
+    ).str.lower().fillna("")
+
+    temp_df["element_sum"] = temp_df[ELEMENTS].sum(axis=1)
+    temp_df = temp_df[temp_df["element_sum"] > 0].copy()
+
+    ban_words = ["sample", "discovery", "set", "gift", "miniature"]
+    mask = ~temp_df["Name"].str.lower().apply(lambda x: any(w in x for w in ban_words))
+    temp_df = temp_df[mask].copy()
+
+    drop_keys = ["Brand", "Name"]
+    for c in drop_keys:
+        if c not in temp_df.columns:
+            temp_df[c] = ""
+    global df
+    df = temp_df.drop_duplicates(subset=drop_keys).reset_index(drop=True)
+    # 캐싱 컬럼을 사전에 생성
+    df["note_tokens_set"] = df.apply(extract_note_tokens, axis=1)
+    print(f"Loaded {len(df)} perfumes successfully with note token caching.")
+
+load_data()
 
 def get_real_saju_elements(year, month, day, hour=None, minute=None):
     cal = KoreanLunarCalendar()
@@ -223,11 +523,18 @@ def get_real_saju_elements(year, month, day, hour=None, minute=None):
             counts[element_map[c]] += 1
 
     sorted_e = sorted(counts.items(), key=lambda x: x[1], reverse=True)
+    max_val = sorted_e[0][1]
+    min_val = sorted_e[-1][1]
+    # 오행 고정 순서: Wood, Fire, Earth, Metal, Water (ELEMENTS 배열 순서)
+    strongest_elements = [e for e in ELEMENTS if counts[e] == max_val]
+    weakest_elements = [e for e in ELEMENTS if counts[e] == min_val]
     return {
         "saju_name": saju_name,
         "counts": counts, 
-        "strongest": sorted_e[0][0],
-        "weakest": sorted_e[-1][0],
+        "strongest": strongest_elements[0],
+        "weakest": weakest_elements[0],
+        "strongest_elements": strongest_elements,
+        "weakest_elements": weakest_elements,
         "gapja_str": gapja_str,
         "pillars": pillars 
     }
@@ -235,40 +542,62 @@ def get_real_saju_elements(year, month, day, hour=None, minute=None):
 def find_perfume_in_db(brand_input: str, name_input: str):
     if df.empty:
         return None
-    brand_q = brand_input.strip().lower()
-    name_q = name_input.strip().lower()
-
-    mask = (
-        df["Brand"].str.lower().str.contains(brand_q, regex=False, na=False) &
-        df["Name"].str.lower().str.contains(name_q, regex=False, na=False)
-    )
-    hits = df[mask]
-    if len(hits) == 0:
-        mask2 = df["Name"].str.lower().str.contains(name_q, regex=False, na=False)
-        hits = df[mask2]
-    if len(hits) == 0:
+    
+    brand_q = normalize_brand_name(brand_input)
+    name_q = normalize_perfume_name(name_input)
+    
+    # DB 행들의 브랜드/향수명 정규화
+    db_brands = df["Brand"].apply(normalize_brand_name)
+    db_names = df["Name"].apply(normalize_perfume_name)
+    
+    # 1. 브랜드명이 제공된 경우
+    if brand_q:
+        # 완전 일치
+        mask_exact = (db_brands == brand_q) & (db_names == name_q)
+        hits = df[mask_exact]
+        if not hits.empty:
+            return hits.copy().assign(_name_len=hits["Name"].str.len()).sort_values("_name_len").iloc[0].to_dict()
+            
+        # 브랜드가 주어졌으나 매칭 실패한 경우 다른 브랜드 동명 향수를 조용히 매치시키지 않고 None 반환
         return None
         
-    hits = hits.copy()
-    hits["_name_len"] = hits["Name"].str.len()
-    return hits.sort_values("_name_len").iloc[0].to_dict()
+    # 2. 브랜드명이 원래 제공되지 않은 경우만 향수명 단독 검색
+    else:
+        mask_name = db_names == name_q
+        hits = df[mask_name]
+        if not hits.empty:
+            return hits.copy().assign(_name_len=hits["Name"].str.len()).sort_values("_name_len").iloc[0].to_dict()
+            
+        mask_name_partial = db_names.str.contains(name_q, regex=False)
+        hits = df[mask_name_partial]
+        if not hits.empty:
+            return hits.copy().assign(_name_len=hits["Name"].str.len()).sort_values("_name_len").iloc[0].to_dict()
+            
+        return None
 
 async def get_perfume_notes_via_ai(brand: str, name: str) -> str:
     if not client:
         return ""
     try:
-        resp = await client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "너는 향수 전문가야. 향수의 주요 노트를 영어로 콤마 구분해서만 답해. 예: bergamot, rose, sandalwood, musk. 다른 말은 하지 마. 항상 가장 대표적이고 공식적인 노트만 답해."},
-                {"role": "user", "content": f"향수: {brand} - {name}\n이 향수의 공식 주요 향 노트를 알려줘."}
-            ],
-            temperature=0,
-            seed=42,
-            max_tokens=50
+        import asyncio
+        resp = await asyncio.wait_for(
+            client.aio.models.generate_content(
+                model=GEMINI_MODEL_NAME,
+                contents=f"너는 향수 전문가야. 향수의 주요 노트를 영어로 콤마 구분해서만 답해. 예: bergamot, rose, sandalwood, musk. 다른 말은 하지 마. 항상 가장 대표적이고 공식적인 노트만 답해. 만약 해당 향수의 공식 노트를 전혀 모르거나 확신할 수 없다면 절대 지어내지 말고 오직 'UNKNOWN'이라고만 답해.\n\n향수: {brand} - {name}\n이 향수의 공식 주요 향 노트를 알려줘.",
+                config=types.GenerateContentConfig(
+                    temperature=0,
+                    max_output_tokens=50,
+                    system_instruction="너는 향수 전문가야.",
+                )
+            ),
+            timeout=30.0
         )
-        return resp.choices[0].message.content.strip() if resp and resp.choices else ""
-    except Exception:
+        ans = resp.text.strip() if resp and resp.text else ""
+        if not ans or "UNKNOWN" in ans.upper() or len(ans) < 3:
+            return ""
+        return ans
+    except (Exception, asyncio.TimeoutError) as e:
+        print(f"Error in get_perfume_notes_via_ai: {type(e).__name__}")
         return ""
 
 def compute_perfume_element_vector(notes_text: str) -> dict[str, float]:
@@ -412,40 +741,62 @@ async def generate_compatibility_result(
 """.strip()
 
     try:
-        resp = await client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "너는 명리학+조향 전문가야. 반드시 JSON만 출력해."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.8,
-            max_tokens=500
+        import asyncio
+        resp = await asyncio.wait_for(
+            client.aio.models.generate_content(
+                model=GEMINI_MODEL_NAME,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    temperature=0.8,
+                    max_output_tokens=2048,
+                    system_instruction="너는 명리학+조향 전문가야. 반드시 JSON만 출력해.",
+                    response_mime_type="application/json",
+                )
+            ),
+            timeout=30.0
         )
-        raw = resp.choices[0].message.content if resp and resp.choices else ""
-        raw = _strip_code_fences(raw)
-        data = json.loads(raw)
-        required = ["one_liner", "good_reasons", "bad_reasons", "perf_element_summary", "compatibility_detail"]
-        if all(k in data for k in required):
-            return data
-        return fallback
-    except Exception:
+        data = None
+        if hasattr(resp, 'parsed') and resp.parsed:
+            try:
+                data = resp.parsed.model_dump()
+            except Exception:
+                try:
+                    data = dict(resp.parsed)
+                except Exception:
+                    pass
+        if not data:
+            raw = resp.text if resp and resp.text else ""
+            raw = _strip_code_fences(raw)
+            data = json.loads(raw)
+            
+        parsed_data = CompatResultSchema(**data)
+        final_data = fallback.copy()
+        final_data.update(parsed_data.model_dump())
+        return final_data
+    except (Exception, asyncio.TimeoutError) as e:
+        print(f"Error in generate_compatibility_result: {type(e).__name__}")
         return fallback
 
 
 def _apply_gender_filter(work: pd.DataFrame, user_gender: str) -> pd.DataFrame:
     MIN_AFTER_GENDER_FILTER = 30
     GENDER_THRESHOLDS = [0.45, 0.35, 0.25]
-    if work.empty or user_gender not in ["남성향", "여성향"]:
+    
+    norm_gender = normalize_gender_filter(user_gender)
+    if work.empty or norm_gender not in ["male", "female"]:
+        # 필터 없음 또는 중성/전체는 필터 생략
         return work  
-    score_col = "Male_Score" if user_gender == "남성향" else "Female_Score"
+        
+    score_col = "Male_Score" if norm_gender == "male" else "Female_Score"
     
     for thr in GENDER_THRESHOLDS:
         filtered = work[work[score_col] >= thr]
         if len(filtered) >= MIN_AFTER_GENDER_FILTER:
             return filtered.copy()
+            
     return work
 
-def recommend_perfumes(df, weakest, strongest, pref_tags, dislike_tags, brand_filter_mode, gender_filter="전체"):
+def recommend_perfumes(df, weakest_elements, strongest_elements, pref_tags, dislike_tags, brand_filter_mode, gender_filter="전체", policy: RecommendationPolicy = BALANCED_POLICY):
     MIN_AFTER_BRAND_FILTER = 20
     DROP_DUP_KEYS = ["Brand", "Name"]
     if df.empty:
@@ -463,40 +814,124 @@ def recommend_perfumes(df, weakest, strongest, pref_tags, dislike_tags, brand_fi
         if len(filtered) >= MIN_AFTER_BRAND_FILTER:
             work = filtered.copy()
 
-    pref_keywords = tags_to_keywords(pref_tags)
-    dislike_keywords = tags_to_keywords(dislike_tags)
-    target = [1.0 if e == weakest else (0.1 if e == strongest else 0.5) for e in ELEMENTS]
+    # `tags_to_keywords`를 통해 키워드 추출
+    pref_keywords = []
+    for t in pref_tags:
+        pref_keywords.extend(TAG_TO_KEYWORDS.get(t, []))
+    dislike_keywords = []
+    for t in dislike_tags:
+        dislike_keywords.extend(TAG_TO_KEYWORDS.get(t, []))
+        
+    target = [1.0 if e in weakest_elements else (0.1 if e in strongest_elements else 0.5) for e in ELEMENTS]
 
     rows = []
     for _, row in work.iterrows():
-        text = row.get("all_text", "")
-        dislike_score = keyword_hit_score(text, dislike_keywords)
-        pref_score = keyword_hit_score(text, pref_keywords)
+        perfume_tokens = row.get("note_tokens_set")
+        if perfume_tokens is None or not isinstance(perfume_tokens, set):
+            perfume_tokens = extract_note_tokens(row)
+            
+        dislike_score = keyword_hit_score_for_row(perfume_tokens, dislike_keywords)
+        pref_score = keyword_hit_score_for_row(perfume_tokens, pref_keywords)
         vec = [float(row.get(e, 0.0)) for e in ELEMENTS]
 
         denom = math.sqrt(sum(t*t for t in target)) * math.sqrt(sum(v*v for v in vec))
         sim = sum(t * v for t, v in zip(target, vec)) / denom if denom > 0 else 0.0
-        brand_bonus = 0.15 if any(b.lower() in str(row.get("Brand", "")).lower() for b in FAMOUS_BRANDS) else 0.0
+        
+        norm_row_brand = normalize_brand_name(row.get("Brand", ""))
+        is_famous = any(normalize_brand_name(b) in norm_row_brand for b in FAMOUS_BRANDS)
+        
+        # Notes, Top, Middle, Base 정보가 다 비어 있으면 결측 상태로 취급
+        has_notes = any(str(row.get(col, "")).strip() for col in ["Notes", "Top", "Middle", "Base"])
 
-        final_score = (0.55 * sim) + (0.20 * float(row.get(weakest, 0.0))) + (0.18 * pref_score) - (0.20 * dislike_score) + brand_bonus
-        if dislike_score >= 0.4:
-            final_score -= 0.5
+        # 부족 오행 채움 점수: 여러 부족 오행의 평균
+        weak_fill_avg = sum(float(row.get(e, 0.0)) for e in weakest_elements) / len(weakest_elements)
+        
+        final_score = calculate_final_score(
+            sim=sim,
+            weak_fill_avg=weak_fill_avg,
+            pref_score=pref_score,
+            dislike_score=dislike_score,
+            is_famous_brand=is_famous,
+            has_note_data=has_notes,
+            policy=policy
+        )
+        
+        # 하드 필터 등으로 인하여 배제된 경우 제외
+        if final_score is None:
+            continue
 
         r = row.to_dict()
-        r.update({"score": float(final_score), f"{weakest}_fill": float(row.get(weakest, 0.0))})
+        r.update({
+            "score": float(final_score), 
+            "weak_fill_avg": float(weak_fill_avg),
+            "sim": float(sim),
+            "pref_score": float(pref_score),
+            "dislike_score": float(dislike_score)
+        })
         rows.append(r)
 
-    out = (
-        pd.DataFrame(rows)
-        .sort_values("score", ascending=False)
-        .drop_duplicates(subset=DROP_DUP_KEYS)
-        .reset_index(drop=True)
-    )
+    # 만약 하드 필터 등으로 인해 후보가 너무 부족한 경우(3개 미만)의 안전 복구 장치(Fallback)
+    # 1. Notes 제외 정책 해제 복구
+    if len(rows) < 3 and policy.missing_notes_policy == "exclude":
+        # missing_notes_policy를 penalty로 완화하여 재실행
+        fallback_policy = RecommendationPolicy(
+            name=policy.name + "_fallback",
+            sim_weight=policy.sim_weight,
+            weak_fill_weight=policy.weak_fill_weight,
+            preference_weight=policy.preference_weight,
+            dislike_weight=policy.dislike_weight,
+            brand_bonus=policy.brand_bonus,
+            strong_dislike_threshold=policy.strong_dislike_threshold,
+            strong_dislike_penalty=policy.strong_dislike_penalty,
+            hard_filter_threshold=policy.hard_filter_threshold,
+            missing_notes_policy="penalty"
+        )
+        return recommend_perfumes(df, weakest_elements, strongest_elements, pref_tags, dislike_tags, brand_filter_mode, gender_filter, fallback_policy)
+        
+    # 2. 비선호 하드 필터 완화 복구
+    if len(rows) < 3 and policy.hard_filter_threshold is not None:
+        # hard_filter_threshold를 해제하여 감점 방식으로 재실행
+        fallback_policy = RecommendationPolicy(
+            name=policy.name + "_fallback",
+            sim_weight=policy.sim_weight,
+            weak_fill_weight=policy.weak_fill_weight,
+            preference_weight=policy.preference_weight,
+            dislike_weight=policy.dislike_weight,
+            brand_bonus=policy.brand_bonus,
+            strong_dislike_threshold=policy.strong_dislike_threshold,
+            strong_dislike_penalty=policy.strong_dislike_penalty,
+            hard_filter_threshold=None,
+            missing_notes_policy=policy.missing_notes_policy
+        )
+        return recommend_perfumes(df, weakest_elements, strongest_elements, pref_tags, dislike_tags, brand_filter_mode, gender_filter, fallback_policy)
+
+    out = pd.DataFrame(rows)
+    if not out.empty:
+        # 다중 키 결정론적 정렬을 위한 임시 컬럼 생성
+        out["Brand_lower"] = out["Brand"].astype(str).str.lower()
+        out["Name_lower"] = out["Name"].astype(str).str.lower()
+        
+        # 정규화된 브랜드/이름 기준으로 중복 제거
+        out["Brand_norm"] = out["Brand"].apply(normalize_brand_name)
+        out["Name_norm"] = out["Name"].apply(normalize_perfume_name)
+        
+        # stable sort 적용하여 내림차순/오름차순 정렬
+        out = out.sort_values(
+            by=["score", "sim", "weak_fill_avg", "pref_score", "dislike_score", "Brand_lower", "Name_lower"],
+            ascending=[False, False, False, False, True, True, True]
+        )
+        
+        # 정규화된 기준 중복 제거
+        out = out.drop_duplicates(subset=["Brand_norm", "Name_norm"])
+        # API 응답에 내부 전용 컬럼이 노출되지 않도록 드롭
+        out = out.drop(columns=["Brand_lower", "Name_lower", "Brand_norm", "Name_norm"])
+        out = out.reset_index(drop=True)
+        
     return out
 
 async def generate_comprehensive_reading_json(
     user_name: str, gender: str, saju_name: str, strongest: str, weakest: str, 
-    top3_df: pd.DataFrame, know_time: bool, interests: List[str]
+    top3_df: pd.DataFrame, is_birth_time_unknown: bool, interests: List[str]
 ) -> dict:
     strong_ko = ELEMENTS_KO.get(strongest, strongest)
     weak_ko = ELEMENTS_KO.get(weakest, weakest)
@@ -505,7 +940,9 @@ async def generate_comprehensive_reading_json(
     p1 = p.iloc[0] if len(p) > 0 else {}
     p2 = p.iloc[1] if len(p) > 1 else p1
     p3 = p.iloc[2] if len(p) > 2 else p1
-    time_notice = "정오 기준(오차 가능)" if not know_time else "입력된 생시 기준"
+    # is_birth_time_unknown=True → 시간 모름 → 정오 기준
+    # is_birth_time_unknown=False → 시간 알고 있음 → 입력된 생시 기준
+    time_notice = "정오 기준(오차 가능)" if is_birth_time_unknown else "입력된 생시 기준"
     interests_str = ", ".join(interests) if interests else "전반적인 운"
 
     def notes_with_top_mid_base(row):
@@ -529,10 +966,10 @@ async def generate_comprehensive_reading_json(
             "best_environment": f"{strong_ko} 기운을 펼칠 수 있는 환경, 즉 목표와 기준이 명확한 콘텍스트에서 특히 강하다는 것을 유념하세요.",
             "perfume_effect": "추천된 향수를 뿌릴 때마다 부족한 기운을 속으로 물들이는 의식적 한관이 될 수 있어요."
         },
-        "luck_analysis": {
-            "primary": f"'{interests_str}' 방면에서 {weak_ko} 기운을 잊으면 더 편안하고 안정적인 흐름을 만들어 나갈 수 있어요.",
-            "secondary": f"전반적으로 {strong_ko} 기운의 흐름이 강하니, 지금은 에너지 소모를 주의하게 환경에 수 마르세요."
-        }
+        "luck_analysis": [
+            {"luck_name": interests_str, "detail": "분석된 기운을 바탕으로 조언해 드려요."}
+        ],
+        "perfumes": []
     }
 
     if not client:
@@ -593,24 +1030,42 @@ async def generate_comprehensive_reading_json(
 """.strip()
 
     try:
-        resp = await client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "너는 명리학+조향 전문가야. 반드시 JSON만 출력해."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.75,
-            max_tokens=1200
-
+        import asyncio
+        resp = await asyncio.wait_for(
+            client.aio.models.generate_content(
+                model=GEMINI_MODEL_NAME,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    temperature=0.75,
+                    max_output_tokens=4096,
+                    system_instruction="너는 명리학과 조향을 연결하는 전문가야. 결과는 반드시 지정된 JSON 형식으로만 출력해.",
+                    response_mime_type="application/json",
+                )
+            ),
+            timeout=30.0
         )
-        raw = resp.choices[0].message.content if resp and resp.choices else ""
-        raw = _strip_code_fences(raw)
-        data = json.loads(raw)
-        required = ["hero_title", "saju_analysis", "luck_analysis"]
-        if all(k in data for k in required):
-            return data
-        return fallback
-    except Exception:
+        data = None
+        if hasattr(resp, 'parsed') and resp.parsed:
+            try:
+                data = resp.parsed.model_dump()
+            except Exception:
+                try:
+                    data = dict(resp.parsed)
+                except Exception:
+                    pass
+        if not data:
+            raw = resp.text if resp and resp.text else ""
+            raw = _strip_code_fences(raw)
+            data = json.loads(raw)
+            
+        parsed_data = ReadingResultSchema(**data)
+        final_data = fallback.copy()
+        final_data.update(parsed_data.model_dump())
+        return final_data
+    except (Exception, asyncio.TimeoutError) as e:
+        import traceback
+        traceback.print_exc()
+        print(f"Error in generate_comprehensive_reading_json: {type(e).__name__} - {e}")
         return fallback
 
 
@@ -630,7 +1085,8 @@ class CompatRequest(BaseModel):
     day: int
     hour: Optional[int] = None
     minute: Optional[int] = None
-    know_time: bool
+    know_time: bool = True
+    is_birth_time_unknown: Optional[bool] = None
     perf_brand: str
     perf_name: str
 
@@ -648,7 +1104,8 @@ class RecommendDirectRequest(BaseModel):
     day: int
     hour: Optional[int] = None
     minute: Optional[int] = None
-    know_time: bool
+    know_time: bool = True
+    is_birth_time_unknown: Optional[bool] = None
     pref_tags: List[str]
     dislike_tags: List[str]
     gender_filter: str
@@ -689,10 +1146,22 @@ async def get_perfume_image_url(brand: str, name: str, db_img_url: Optional[str]
 
 @app.post("/api/compatibility", response_model=CompatResponse)
 async def get_compatibility(req: CompatRequest):
+    # 날짜 유효성 검증
+    validate_birth_date(req.year, req.month, req.day)
+    
+    # 출생시간 의미 통일
+    is_birth_time_unknown = resolve_birth_time_unknown(req)
+    
+    # 시간/분 검증 (시간을 아는 경우만)
+    if not is_birth_time_unknown:
+        validate_birth_time(req.hour, req.minute)
+    
     # Calculate user saju
-    saju_res = get_real_saju_elements(req.year, req.month, req.day, req.hour if not req.know_time else None, req.minute if not req.know_time else None)
+    use_hour = req.hour if not is_birth_time_unknown else None
+    use_minute = req.minute if not is_birth_time_unknown else None
+    saju_res = get_real_saju_elements(req.year, req.month, req.day, use_hour, use_minute)
     if not saju_res:
-        raise HTTPException(status_code=400, detail="Invalid date for Saju calculation")
+        raise HTTPException(status_code=422, detail="사주 계산에 실패했습니다. 입력 정보를 다시 확인해주세요.")
     
     # Get perfume info
     db_row = find_perfume_in_db(req.perf_brand, req.perf_name)
@@ -708,7 +1177,7 @@ async def get_compatibility(req: CompatRequest):
     # Compute perf vector
     perf_vec = compute_perfume_element_vector(notes_text)
     
-    # Check score
+    # Check score — 궁합 점수에는 단일 weakest/strongest 사용 (기존 호환)
     score = compute_compatibility_score(saju_res["counts"], perf_vec, saju_res["weakest"], saju_res["strongest"])
 
     # AI generation
@@ -756,11 +1225,14 @@ class RecommendResponse(BaseModel):
 async def get_recommendations(req: RecommendRequest):
     weak = req.saju_data["weakest"]
     strong = req.saju_data["strongest"]
+    weak_elements = req.saju_data.get("weakest_elements", [weak])
+    strong_elements = req.saju_data.get("strongest_elements", [strong])
     saju_name = req.saju_data["saju_name"]
-    know_time = "(시간 모름" not in saju_name # 간단한 파악
+    # saju_name에 "(시간 모름"이 있으면 출생시간을 모르는 것
+    is_birth_time_unknown = "(시간 모름" in saju_name
 
     rec_df = recommend_perfumes(
-        df, weak, strong, req.pref_tags, req.dislike_tags, 
+        df, weak_elements, strong_elements, req.pref_tags, req.dislike_tags, 
         req.brand_filter_mode, req.gender_filter
     )
     
@@ -808,7 +1280,7 @@ async def get_recommendations(req: RecommendRequest):
         strongest=strong,
         weakest=weak,
         top3_df=top3,
-        know_time=know_time,
+        is_birth_time_unknown=is_birth_time_unknown,
         interests=req.interests
     )
 
@@ -836,18 +1308,31 @@ async def get_recommendations(req: RecommendRequest):
 
 @app.post("/api/recommend_direct", response_model=RecommendResponse)
 async def get_direct_recommendations(req: RecommendDirectRequest):
+    # 날짜 유효성 검증
+    validate_birth_date(req.year, req.month, req.day)
+    
+    # 출생시간 의미 통일
+    is_birth_time_unknown = resolve_birth_time_unknown(req)
+    
+    # 시간/분 검증 (시간을 아는 경우만)
+    if not is_birth_time_unknown:
+        validate_birth_time(req.hour, req.minute)
+    
     # Calculate user saju
-    saju_res = get_real_saju_elements(req.year, req.month, req.day, req.hour if not req.know_time else None, req.minute if not req.know_time else None)
+    use_hour = req.hour if not is_birth_time_unknown else None
+    use_minute = req.minute if not is_birth_time_unknown else None
+    saju_res = get_real_saju_elements(req.year, req.month, req.day, use_hour, use_minute)
     if not saju_res:
-        raise HTTPException(status_code=400, detail="Invalid date for Saju calculation")
+        raise HTTPException(status_code=422, detail="사주 계산에 실패했습니다. 입력 정보를 다시 확인해주세요.")
     
     weak = saju_res["weakest"]
     strong = saju_res["strongest"]
+    weak_elements = saju_res["weakest_elements"]
+    strong_elements = saju_res["strongest_elements"]
     saju_name = saju_res["saju_name"]
-    know_time = req.know_time
 
     rec_df = recommend_perfumes(
-        df, weak, strong, req.pref_tags, req.dislike_tags, 
+        df, weak_elements, strong_elements, req.pref_tags, req.dislike_tags, 
         req.brand_filter_mode, req.gender_filter
     )
     
@@ -895,7 +1380,7 @@ async def get_direct_recommendations(req: RecommendDirectRequest):
         strongest=strong,
         weakest=weak,
         top3_df=top3,
-        know_time=know_time,
+        is_birth_time_unknown=is_birth_time_unknown,
         interests=req.interests
     )
 
@@ -917,7 +1402,9 @@ async def get_direct_recommendations(req: RecommendDirectRequest):
 
     reading["saju_data"] = {
         "strongest": strong,
-        "weakest": weak
+        "weakest": weak,
+        "strongest_elements": strong_elements,
+        "weakest_elements": weak_elements
     }
 
     return RecommendResponse(

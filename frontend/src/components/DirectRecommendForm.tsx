@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
+import { getDaysInMonth, clampDay } from "@/lib/dateUtils";
 
 const TAG_OPTIONS = [
     "꽃향기(플로럴)", "과일향(프루티)", "나무향(우디)", "상큼한(시트러스)",
@@ -17,28 +18,34 @@ const INTEREST_OPTIONS = [
     "금전운 💰", "연애운 💕", "학업운 📚", "취업/직장운 💼", "대인관계 🤝"
 ];
 
-export default function DirectRecommendForm({ onSubmit }: { onSubmit: (data: any) => void }) {
+export default function DirectRecommendForm({ onSubmit, userInfo, apiError }: { onSubmit: (data: any) => void, userInfo?: any, apiError?: string }) {
     // User Info State
-    const [userName, setUserName] = useState("");
-    const [gender, setGender] = useState("선택 안 함");
-    const [year, setYear] = useState("1995");
-    const [month, setMonth] = useState("1");
-    const [day, setDay] = useState("1");
-    const [knowTime, setKnowTime] = useState(false);
-    const [timeBranch, setTimeBranch] = useState("0");
+    const [userName, setUserName] = useState(userInfo?.user_name || "");
+    const [gender, setGender] = useState(userInfo?.gender || "선택 안 함");
+    const [year, setYear] = useState(userInfo?.year ? String(userInfo.year) : "1995");
+    const [month, setMonth] = useState(userInfo?.month ? String(userInfo.month) : "1");
+    const [day, setDay] = useState(userInfo?.day ? String(userInfo.day) : "1");
+    const [isBirthTimeUnknown, setIsBirthTimeUnknown] = useState(userInfo?.is_birth_time_unknown || false);
+    const [timeBranch, setTimeBranch] = useState(userInfo?.hour !== null && userInfo?.hour !== undefined ? String(userInfo.hour) : "0");
+    const [errorMsg, setErrorMsg] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const daysInMonth = getDaysInMonth(parseInt(year), parseInt(month));
 
     // Preference State
-    const [prefTags, setPrefTags] = useState<string[]>([]);
-    const [dislikeTags, setDislikeTags] = useState<string[]>([]);
-    const [genderFilter, setGenderFilter] = useState("전체");
-    const [interests, setInterests] = useState<string[]>([]);
+    const [prefTags, setPrefTags] = useState<string[]>(userInfo?.pref_tags || []);
+    const [dislikeTags, setDislikeTags] = useState<string[]>(userInfo?.dislike_tags || []);
+    const [genderFilter, setGenderFilter] = useState(userInfo?.gender_filter || "전체");
+    const [interests, setInterests] = useState<string[]>(userInfo?.interests || []);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!userName.trim()) {
-            alert("이름(또는 닉네임)을 입력해주세요.");
+            setErrorMsg("이름(또는 닉네임)을 입력해주세요.");
             return;
         }
+        setErrorMsg("");
+        setIsSubmitting(true);
 
         onSubmit({
             user_name: userName.trim(),
@@ -46,9 +53,10 @@ export default function DirectRecommendForm({ onSubmit }: { onSubmit: (data: any
             year: parseInt(year),
             month: parseInt(month),
             day: parseInt(day),
-            hour: knowTime ? null : parseInt(timeBranch),
-            minute: knowTime ? null : 0,
-            know_time: knowTime,
+            hour: isBirthTimeUnknown ? null : parseInt(timeBranch),
+            minute: isBirthTimeUnknown ? null : 0,
+            is_birth_time_unknown: isBirthTimeUnknown,
+            know_time: isBirthTimeUnknown,
             pref_tags: prefTags,
             dislike_tags: dislikeTags,
             gender_filter: genderFilter,
@@ -72,10 +80,10 @@ export default function DirectRecommendForm({ onSubmit }: { onSubmit: (data: any
                     <form onSubmit={handleSubmit} className="space-y-10">
                         {/* User Info Section */}
                         <div className="space-y-5">
-                            <Label className="font-bold text-slate-800 text-base border-b border-slate-100 pb-2 block text-center">내 정보</Label>
+                            <Label className="font-bold text-slate-800 text-base border-b border-slate-100 pb-2 block text-center">1. 내 정보</Label>
 
                             <div className="space-y-2">
-                                <Label htmlFor="userName">이름 (또는 닉네임)</Label>
+                                <Label htmlFor="userName">이름 (또는 닉네임) <span className="text-orange-500 font-normal">(필수)</span></Label>
                                 <Input
                                     id="userName"
                                     placeholder="예: 홍길동"
@@ -86,7 +94,7 @@ export default function DirectRecommendForm({ onSubmit }: { onSubmit: (data: any
                             </div>
 
                             <div className="space-y-3">
-                                <Label>성별</Label>
+                                <Label>성별 <span className="text-orange-500 font-normal">(필수)</span></Label>
                                 <RadioGroup value={gender} onValueChange={setGender} className="flex gap-4">
                                     <div className="flex items-center space-x-2 bg-slate-50/50 px-3 py-2 rounded-lg border flex-1 cursor-pointer">
                                         <RadioGroupItem value="여성" id="gender-f-direct" />
@@ -100,11 +108,17 @@ export default function DirectRecommendForm({ onSubmit }: { onSubmit: (data: any
                             </div>
 
                             <div className="space-y-2">
-                                <Label>생년월일 (양력)</Label>
+                                <Label>생년월일 (양력) <span className="text-orange-500 font-normal">(필수)</span></Label>
                                 <div className="flex gap-2">
                                     <select
+                                        aria-label="태어난 연도"
                                         value={year}
-                                        onChange={(e) => setYear(e.target.value)}
+                                        onChange={(e) => {
+                                            const newYear = e.target.value;
+                                            setYear(newYear);
+                                            const clamped = clampDay(parseInt(day), parseInt(newYear), parseInt(month));
+                                            if (clamped !== parseInt(day)) setDay(String(clamped));
+                                        }}
                                         className="flex h-10 w-full rounded-md border border-input bg-slate-50/50 px-3 py-2 text-sm"
                                     >
                                         {Array.from({ length: 100 }).map((_, i) => {
@@ -113,8 +127,14 @@ export default function DirectRecommendForm({ onSubmit }: { onSubmit: (data: any
                                         })}
                                     </select>
                                     <select
+                                        aria-label="태어난 월"
                                         value={month}
-                                        onChange={(e) => setMonth(e.target.value)}
+                                        onChange={(e) => {
+                                            const newMonth = e.target.value;
+                                            setMonth(newMonth);
+                                            const clamped = clampDay(parseInt(day), parseInt(year), parseInt(newMonth));
+                                            if (clamped !== parseInt(day)) setDay(String(clamped));
+                                        }}
                                         className="flex h-10 w-full rounded-md border border-input bg-slate-50/50 px-3 py-2 text-sm"
                                     >
                                         {Array.from({ length: 12 }).map((_, i) => (
@@ -122,11 +142,12 @@ export default function DirectRecommendForm({ onSubmit }: { onSubmit: (data: any
                                         ))}
                                     </select>
                                     <select
+                                        aria-label="태어난 일"
                                         value={day}
                                         onChange={(e) => setDay(e.target.value)}
                                         className="flex h-10 w-full rounded-md border border-input bg-slate-50/50 px-3 py-2 text-sm"
                                     >
-                                        {Array.from({ length: 31 }).map((_, i) => (
+                                        {Array.from({ length: daysInMonth }).map((_, i) => (
                                             <option key={i + 1} value={i + 1}>{i + 1}일</option>
                                         ))}
                                     </select>
@@ -135,20 +156,21 @@ export default function DirectRecommendForm({ onSubmit }: { onSubmit: (data: any
 
                             <div className="space-y-3 pt-2">
                                 <div className="flex items-center justify-between">
-                                    <Label>태어난 시간</Label>
+                                    <Label>태어난 시간 <span className="text-slate-400 font-normal">(선택)</span></Label>
                                     <div className="flex items-center space-x-2">
                                         <Checkbox
                                             id="knowTimeDirect"
-                                            checked={knowTime}
-                                            onCheckedChange={(c) => setKnowTime(c as boolean)}
+                                            checked={isBirthTimeUnknown}
+                                            onCheckedChange={(c) => setIsBirthTimeUnknown(c as boolean)}
                                         />
-                                        <Label htmlFor="knowTimeDirect" className="text-xs text-slate-500 font-normal cursor-pointer">
-                                            시간을 몰라요
+                                        <Label htmlFor="knowTimeDirect" className="text-xs text-slate-500 font-normal cursor-pointer py-1">
+                                            태어난 시간 모름
                                         </Label>
                                     </div>
                                 </div>
-                                {!knowTime && (
+                                {!isBirthTimeUnknown && (
                                     <select
+                                        aria-label="태어난 시간대"
                                         value={timeBranch}
                                         onChange={(e) => setTimeBranch(e.target.value)}
                                         className="flex h-10 w-full rounded-md border border-input bg-slate-50/50 px-3 py-2 text-sm"
@@ -173,7 +195,8 @@ export default function DirectRecommendForm({ onSubmit }: { onSubmit: (data: any
                         {/* Preferences Section */}
                         <div className="space-y-8">
                             <div className="space-y-4">
-                                <Label className="font-bold text-slate-800 text-base border-b border-slate-100 pb-2 block text-center">선호하는 향</Label>
+                                <Label className="font-bold text-slate-800 text-base border-b border-slate-100 pb-2 block text-center">2. 향수 취향 입력</Label>
+                                <Label className="font-bold text-slate-800 text-base border-b border-slate-100 pb-2 block text-center mt-2">선호하는 향 <span className="text-slate-400 font-normal text-sm">(선택)</span></Label>
                                 <div className="flex flex-wrap gap-2">
                                     {TAG_OPTIONS.map(tag => (
                                         <button
@@ -183,7 +206,7 @@ export default function DirectRecommendForm({ onSubmit }: { onSubmit: (data: any
                                                 if (dislikeTags.includes(tag)) toggleArrayItem(dislikeTags, setDislikeTags, tag);
                                                 toggleArrayItem(prefTags, setPrefTags, tag);
                                             }}
-                                            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${prefTags.includes(tag) ? 'bg-orange-100 border-orange-200 text-orange-800' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
+                                            className={`px-3 py-2.5 rounded-full text-xs font-medium border transition-colors ${prefTags.includes(tag) ? 'bg-orange-100 border-orange-200 text-orange-800' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
                                         >
                                             {tag}
                                         </button>
@@ -192,14 +215,14 @@ export default function DirectRecommendForm({ onSubmit }: { onSubmit: (data: any
                             </div>
 
                             <div className="space-y-4">
-                                <Label className="font-bold text-slate-800 text-base border-b border-slate-100 pb-2 block text-center">피하고 싶은 향</Label>
+                                <Label className="font-bold text-slate-800 text-base border-b border-slate-100 pb-2 block text-center">피하고 싶은 향 <span className="text-slate-400 font-normal text-sm">(선택)</span></Label>
                                 <div className="flex flex-wrap gap-2">
                                     {TAG_OPTIONS.filter(tag => !prefTags.includes(tag)).map(tag => (
                                         <button
                                             key={tag}
                                             type="button"
                                             onClick={() => toggleArrayItem(dislikeTags, setDislikeTags, tag)}
-                                            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${dislikeTags.includes(tag) ? 'bg-red-100 border-red-200 text-red-800' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
+                                            className={`px-3 py-2.5 rounded-full text-xs font-medium border transition-colors ${dislikeTags.includes(tag) ? 'bg-red-100 border-red-200 text-red-800' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
                                         >
                                             {tag}
                                         </button>
@@ -208,7 +231,7 @@ export default function DirectRecommendForm({ onSubmit }: { onSubmit: (data: any
                             </div>
 
                             <div className="space-y-4 pt-2">
-                                <Label className="font-bold text-slate-800 text-base block border-b border-slate-100 pb-2 text-center">가장 끌어올리고 싶은 운</Label>
+                                <Label className="font-bold text-slate-800 text-base block border-b border-slate-100 pb-2 text-center">가장 끌어올리고 싶은 운 <span className="text-slate-400 font-normal text-sm">(선택)</span></Label>
                                 <div className="flex flex-wrap gap-2">
                                     {INTEREST_OPTIONS.map(interest => (
                                         <button
@@ -238,11 +261,14 @@ export default function DirectRecommendForm({ onSubmit }: { onSubmit: (data: any
                             </div>
                         </div>
 
+                        {errorMsg && <div className="text-sm text-red-500 font-bold text-center bg-red-50 p-3 rounded-xl border border-red-100" role="alert">{errorMsg}</div>}
+                        {apiError && !isSubmitting && <div className="text-sm text-red-500 font-bold text-center bg-red-50 p-3 rounded-xl border border-red-100" role="alert" aria-live="assertive">{apiError}</div>}
                         <Button
                             type="submit"
-                            className="w-full h-14 text-lg font-bold rounded-2xl bg-orange-500 hover:bg-orange-600 shadow-md mt-6 transition-transform active:scale-95 text-white"
+                            disabled={isSubmitting}
+                            className="w-full h-14 text-lg font-bold rounded-2xl bg-orange-500 hover:bg-orange-600 shadow-md mt-6 transition-transform active:scale-95 text-white disabled:opacity-70 disabled:cursor-not-allowed"
                         >
-                            운명 향수 추천받기
+                            {isSubmitting ? "분석 중..." : "향수 추천받기"}
                         </Button>
                     </form>
                 </CardContent>

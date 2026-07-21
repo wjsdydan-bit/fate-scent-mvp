@@ -1,43 +1,78 @@
+# ============================================
 # Python
+# ============================================
 __pycache__/
 *.pyc
 *.pyo
 venv/
+.venv/
 .mypy_cache/
 .ruff_cache/
+.pytest_cache/
 
+# ============================================
 # Node / Next.js
+# ============================================
 node_modules/
 .next/
 out/
+dist/
+build/
 
+# ============================================
 # Environment (API 키 포함 — 절대 커밋 금지!)
+# ============================================
 .env
 .env.local
 .env*.local
+!.env.example
 
-# Streamlit / local
-.streamlit/
-
-# VS Code
+# ============================================
+# IDE / Editor
+# ============================================
 .vscode/
+.idx/
 
+# ============================================
 # OS files
+# ============================================
 .DS_Store
 Thumbs.db
 
+# ============================================
+# Streamlit (archive로 이동됨)
+# ============================================
+.streamlit/
+
+# ============================================
 # Data outputs (로그/분석 결과)
+# ============================================
 recommendation_logs*.csv
 merged_survey_logs*.csv
 analysis_summary*.xlsx
 
-# Diff files
+# ============================================
+# Diff files (임시)
+# ============================================
 diff.txt
 diff_utf8.txt
 
+# ============================================
 # Gemini agent
+# ============================================
 .gemini/
 
-# Optional: 큰 원본 데이터(원하면 제외)
-# processed_perfumes_fixed.csv
-# processed_perfumes_fixed_OLD.csv
+# ============================================
+# Deploy
+# ============================================
+.vercel/
+
+# ============================================
+# 대용량 CSV — 개별 파일 기준 ignore
+# (data/audit, docs/reports, archive/는 Git 추적 유지)
+# ============================================
+/data/archive/processed_perfumes_fixed.csv
+/data/archive/processed_perfumes_fixed_0223.csv
+/data/archive/processed_perfumes_fixed_0223
+/data/archive/processed_perfumes_fixed_OLD.csv
+/data/backup/fatescent_master_db_v2_original.csv

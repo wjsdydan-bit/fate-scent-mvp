@@ -1,0 +1,361 @@
+﻿Row_Index,Brand_Original,Name_Original,Field,Original_Value,New_Value,Action
+90,xerjoff,xj-1861-zefiro,Brand,xerjoff,Xerjoff,Standardize Brand
+91,xerjoff,xj-1861-renaissance,Brand,xerjoff,Xerjoff,Standardize Brand
+92,xerjoff,xj-1861-naxos,Brand,xerjoff,Xerjoff,Standardize Brand
+93,xerjoff,uden,Brand,xerjoff,Xerjoff,Standardize Brand
+94,xerjoff,torino21,Brand,xerjoff,Xerjoff,Standardize Brand
+95,xerjoff,tony-iommi-monkey-special,Brand,xerjoff,Xerjoff,Standardize Brand
+96,xerjoff,starlight,Brand,xerjoff,Xerjoff,Standardize Brand
+97,xerjoff,nio,Brand,xerjoff,Xerjoff,Standardize Brand
+98,xerjoff,mefisto,Brand,xerjoff,Xerjoff,Standardize Brand
+99,xerjoff,lira,Brand,xerjoff,Xerjoff,Standardize Brand
+100,xerjoff,la-capitale,Brand,xerjoff,Xerjoff,Standardize Brand
+101,xerjoff,italica,Brand,xerjoff,Xerjoff,Standardize Brand
+102,xerjoff,italica-2021,Brand,xerjoff,Xerjoff,Standardize Brand
+103,xerjoff,gran-ballo,Brand,xerjoff,Xerjoff,Standardize Brand
+104,xerjoff,erba-pura,Brand,xerjoff,Xerjoff,Standardize Brand
+105,xerjoff,dolce-amalfi,Brand,xerjoff,Xerjoff,Standardize Brand
+106,xerjoff,dama-bianca,Brand,xerjoff,Xerjoff,Standardize Brand
+107,xerjoff,cruz-del-sur-ii,Brand,xerjoff,Xerjoff,Standardize Brand
+108,xerjoff,bouquet-ideale,Brand,xerjoff,Xerjoff,Standardize Brand
+109,xerjoff,alexandria-ii,Brand,xerjoff,Xerjoff,Standardize Brand
+110,xerjoff,1888,Brand,xerjoff,Xerjoff,Standardize Brand
+377,penhaligon-s,the-bewitching-yasmine,Brand,penhaligon-s,Penhaligons,Standardize Brand
+378,penhaligon-s,sartorial,Brand,penhaligon-s,Penhaligons,Standardize Brand
+379,penhaligon-s,luna,Brand,penhaligon-s,Penhaligons,Standardize Brand
+380,penhaligon-s,juniper-sling,Brand,penhaligon-s,Penhaligons,Standardize Brand
+381,penhaligon-s,halfeti,Brand,penhaligon-s,Penhaligons,Standardize Brand
+382,penhaligon-s,endymion,Brand,penhaligon-s,Penhaligons,Standardize Brand
+383,penhaligon-s,changing-constance,Brand,penhaligon-s,Penhaligons,Standardize Brand
+384,penhaligon-s,artemisia,Brand,penhaligon-s,Penhaligons,Standardize Brand
+420,paco-rabanne,ultraviolet,Duplicate,ultraviolet,ultraviolet,Remove Duplicate Row
+475,nishane,wulong-cha,Brand,nishane,Nishane,Standardize Brand
+476,nishane,hundred-silent-ways,Brand,nishane,Nishane,Standardize Brand
+477,nishane,hacivat,Brand,nishane,Nishane,Standardize Brand
+478,nishane,fan-your-flames,Brand,nishane,Nishane,Standardize Brand
+479,nishane,ani,Brand,nishane,Nishane,Standardize Brand
+580,montale,wild-pears,Brand,montale,Montale,Standardize Brand
+581,montale,vanilla-extasy,Brand,montale,Montale,Standardize Brand
+582,montale,starry-night,Brand,montale,Montale,Standardize Brand
+583,montale,soleil-de-capri,Brand,montale,Montale,Standardize Brand
+584,montale,sensual-instinct,Brand,montale,Montale,Standardize Brand
+585,montale,ristretto-intense-cafe,Brand,montale,Montale,Standardize Brand
+586,montale,pure-gold,Brand,montale,Montale,Standardize Brand
+587,montale,oudmazing,Brand,montale,Montale,Standardize Brand
+588,montale,mango-manga,Brand,montale,Montale,Standardize Brand
+589,montale,intense-pepper,Brand,montale,Montale,Standardize Brand
+590,montale,intense-cafe,Brand,montale,Montale,Standardize Brand
+591,montale,dark-purple,Brand,montale,Montale,Standardize Brand
+592,montale,arabians-tonka,Brand,montale,Montale,Standardize Brand
+593,montale,aoud-collection-red-aoud,Brand,montale,Montale,Standardize Brand
+979,houbigant,quelques-fleurs-royale,Brand,houbigant,Houbigant,Standardize Brand
+980,houbigant,quelques-fleurs-l-original,Brand,houbigant,Houbigant,Standardize Brand
+988,hermes,voyage-d-hermes-parfum,Brand,hermes,Hermes,Standardize Brand
+989,hermes,voyage-d-hermes,Brand,hermes,Hermes,Standardize Brand
+990,hermes,un-jardin-sur-le-nil,Brand,hermes,Hermes,Standardize Brand
+991,hermes,un-jardin-en-mediterranee,Brand,hermes,Hermes,Standardize Brand
+992,hermes,twilly-d-hermes-eau-poivree-eau-de-parfum,Brand,hermes,Hermes,Standardize Brand
+993,hermes,twilly-d-hermes-eau-ginger,Brand,hermes,Hermes,Standardize Brand
+994,hermes,twilly-d-hermes,Brand,hermes,Hermes,Standardize Brand
+995,hermes,terre-d-hermes-parfum,Brand,hermes,Hermes,Standardize Brand
+996,hermes,terre-d-hermes-eau-tres-fraiche,Brand,hermes,Hermes,Standardize Brand
+997,hermes,terre-d-hermes-eau-intense-vetiver,Brand,hermes,Hermes,Standardize Brand
+998,hermes,terre-d-hermes-eau-givree,Brand,hermes,Hermes,Standardize Brand
+999,hermes,terre-d-hermes,Brand,hermes,Hermes,Standardize Brand
+1000,hermes,l-ombre-des-merveilles,Brand,hermes,Hermes,Standardize Brand
+1001,hermes,kelly-caleche,Brand,hermes,Hermes,Standardize Brand
+1002,hermes,jour-d-hermes-absolu,Brand,hermes,Hermes,Standardize Brand
+1003,hermes,jour-d-hermes,Brand,hermes,Hermes,Standardize Brand
+1004,hermes,hiris,Brand,hermes,Hermes,Standardize Brand
+1005,hermes,hermessence-osmanthe-yunnan,Brand,hermes,Hermes,Standardize Brand
+1006,hermes,equipage,Brand,hermes,Hermes,Standardize Brand
+1007,hermes,eau-des-merveilles,Brand,hermes,Hermes,Standardize Brand
+1008,hermes,eau-de-rhubarbe-ecarlate,Brand,hermes,Hermes,Standardize Brand
+1009,hermes,caleche,Brand,hermes,Hermes,Standardize Brand
+1010,hermes,bel-ami,Brand,hermes,Hermes,Standardize Brand
+1011,hermes,24-faubourg,Brand,hermes,Hermes,Standardize Brand
+1226,giorgio-armani,armani-mania,Duplicate,armani-mania,armani-mania,Remove Duplicate Row
+1248,giorgio-armani,acqua-di-gio,Duplicate,acqua-di-gio,acqua-di-gio,Remove Duplicate Row
+1271,frapin,l-humaniste,Brand,frapin,Frapin,Standardize Brand
+1272,frapin,1270,Brand,frapin,Frapin,Standardize Brand
+1406,diptyque,volutes-eau-de-toilette,Brand,diptyque,Diptyque,Standardize Brand
+1407,diptyque,orpheon-eau-de-parfum,Brand,diptyque,Diptyque,Standardize Brand
+1408,diptyque,34-boulevard-saint-germain,Brand,diptyque,Diptyque,Standardize Brand
+1409,dior,vanilla-diorama,Brand,dior,Dior,Standardize Brand
+1410,dior,tendre-poison,Brand,dior,Dior,Standardize Brand
+1411,dior,sauvage-parfum,Brand,dior,Dior,Standardize Brand
+1412,dior,sauvage-elixir,Brand,dior,Dior,Standardize Brand
+1413,dior,sauvage-eau-de-parfum,Brand,dior,Dior,Standardize Brand
+1414,dior,pure-poison-elixir,Brand,dior,Dior,Standardize Brand
+1415,dior,pure-poison,Brand,dior,Dior,Standardize Brand
+1416,dior,poison-girl-unexpected,Brand,dior,Dior,Standardize Brand
+1417,dior,poison-girl-eau-de-toilette,Brand,dior,Dior,Standardize Brand
+1418,dior,poison-girl,Brand,dior,Dior,Standardize Brand
+1419,dior,oud-ispahan,Brand,dior,Dior,Standardize Brand
+1420,dior,miss-dior-rose-n-roses,Brand,dior,Dior,Standardize Brand
+1421,dior,miss-dior-le-parfum,Brand,dior,Dior,Standardize Brand
+1422,dior,miss-dior-eau-fraiche,Brand,dior,Dior,Standardize Brand
+1423,dior,miss-dior-eau-de-toilette-originale,Brand,dior,Dior,Standardize Brand
+1424,dior,miss-dior-eau-de-toilette,Brand,dior,Dior,Standardize Brand
+1425,dior,miss-dior-eau-de-parfum-2021,Brand,dior,Dior,Standardize Brand
+1426,dior,miss-dior-eau-de-parfum-2017,Brand,dior,Dior,Standardize Brand
+1427,dior,miss-dior-cherie-l-eau,Brand,dior,Dior,Standardize Brand
+1428,dior,miss-dior-cherie-eau-de-toilette-2010,Brand,dior,Dior,Standardize Brand
+1429,dior,miss-dior-cherie-eau-de-parfum,Brand,dior,Dior,Standardize Brand
+1430,dior,miss-dior-cherie,Brand,dior,Dior,Standardize Brand
+1431,dior,miss-dior-absolutely-blooming,Brand,dior,Dior,Standardize Brand
+1432,dior,miss-dior,Brand,dior,Dior,Standardize Brand
+1433,dior,miss-dior-2012,Brand,dior,Dior,Standardize Brand
+1434,dior,midnight-poison,Brand,dior,Dior,Standardize Brand
+1435,dior,les-creations-de-monsieur-dior-forever-and-ever,Brand,dior,Dior,Standardize Brand
+1436,dior,joy-by-dior-intense,Brand,dior,Dior,Standardize Brand
+1437,dior,joy-by-dior,Brand,dior,Dior,Standardize Brand
+1438,dior,j-adore-l-or,Brand,dior,Dior,Standardize Brand
+1439,dior,j-adore-l-absolu,Brand,dior,Dior,Standardize Brand
+1440,dior,j-adore-infinissime,Brand,dior,Dior,Standardize Brand
+1441,dior,j-adore-in-joy,Brand,dior,Dior,Standardize Brand
+1442,dior,j-adore-eau-de-toilette-2011,Brand,dior,Dior,Standardize Brand
+1443,dior,hypnotic-poison-eau-sensuelle,Brand,dior,Dior,Standardize Brand
+1444,dior,hypnotic-poison-eau-secrete,Brand,dior,Dior,Standardize Brand
+1445,dior,hypnotic-poison-eau-de-parfum,Brand,dior,Dior,Standardize Brand
+1446,dior,hypnotic-poison,Brand,dior,Dior,Standardize Brand
+1447,dior,higher-energy,Brand,dior,Dior,Standardize Brand
+1448,dior,higher,Brand,dior,Dior,Standardize Brand
+1449,dior,feve-delicieuse,Brand,dior,Dior,Standardize Brand
+1450,dior,fahrenheit-le-parfum,Brand,dior,Dior,Standardize Brand
+1451,dior,fahrenheit-32,Brand,dior,Dior,Standardize Brand
+1452,dior,eau-sauvage-parfum-2017,Brand,dior,Dior,Standardize Brand
+1453,dior,eau-sauvage-parfum,Brand,dior,Dior,Standardize Brand
+1454,dior,eau-sauvage,Brand,dior,Dior,Standardize Brand
+1455,dior,dune-pour-homme,Brand,dior,Dior,Standardize Brand
+1456,dior,dune,Brand,dior,Dior,Standardize Brand
+1457,dior,dolce-vita,Brand,dior,Dior,Standardize Brand
+1458,dior,diorissimo,Brand,dior,Dior,Standardize Brand
+1459,dior,diorella,Brand,dior,Dior,Standardize Brand
+1460,dior,dior-homme-sport,Brand,dior,Dior,Standardize Brand
+1461,dior,dior-homme-sport-2021,Brand,dior,Dior,Standardize Brand
+1462,dior,dior-homme-sport-2017,Brand,dior,Dior,Standardize Brand
+1463,dior,dior-homme-sport-2012,Brand,dior,Dior,Standardize Brand
+1464,dior,dior-homme-parfum,Brand,dior,Dior,Standardize Brand
+1465,dior,dior-homme-intense-2011,Brand,dior,Dior,Standardize Brand
+1466,dior,dior-homme-eau-for-men,Brand,dior,Dior,Standardize Brand
+1467,dior,dior-homme-cologne-2022,Brand,dior,Dior,Standardize Brand
+1468,dior,dior-homme-cologne-2013,Brand,dior,Dior,Standardize Brand
+1469,dior,dior-homme-2020,Brand,dior,Dior,Standardize Brand
+1470,dior,dior-homme-2005,Brand,dior,Dior,Standardize Brand
+1471,dior,dior-homme,Brand,dior,Dior,Standardize Brand
+1472,dior,dior-addict-eau-sensuelle,Brand,dior,Dior,Standardize Brand
+1473,dior,dior-addict-eau-fraiche-2014,Brand,dior,Dior,Standardize Brand
+1474,dior,dior-addict-eau-fraiche-2012,Brand,dior,Dior,Standardize Brand
+1475,dior,dior-addict-eau-delice,Brand,dior,Dior,Standardize Brand
+1476,dior,dior-addict-eau-de-toilette,Brand,dior,Dior,Standardize Brand
+1477,dior,dior-addict-eau-de-parfum-2014,Brand,dior,Dior,Standardize Brand
+1478,dior,dior-addict-eau-de-parfum,Brand,dior,Dior,Standardize Brand
+1479,dior,dior-addict,Brand,dior,Dior,Standardize Brand
+1480,dior,dior-addict-2,Brand,dior,Dior,Standardize Brand
+1481,dior,cruise-collection-escale-a-portofino,Brand,dior,Dior,Standardize Brand
+1482,dior,bois-d-argent,Brand,dior,Dior,Standardize Brand
+1483,dior,aqua-fahrenheit,Brand,dior,Dior,Standardize Brand
+1484,dior,ambre-nuit,Brand,dior,Dior,Standardize Brand
+1494,davidoff,cool-water,Duplicate,cool-water,cool-water,Remove Duplicate Row
+1501,creed,virgin-island-water,Brand,creed,Creed,Standardize Brand
+1502,creed,viking,Brand,creed,Creed,Standardize Brand
+1503,creed,spice-and-wood,Brand,creed,Creed,Standardize Brand
+1504,creed,royal-water,Brand,creed,Creed,Standardize Brand
+1505,creed,royal-mayfair,Brand,creed,Creed,Standardize Brand
+1506,creed,original-vetiver,Brand,creed,Creed,Standardize Brand
+1507,creed,original-santal,Brand,creed,Creed,Standardize Brand
+1508,creed,love-in-white,Brand,creed,Creed,Standardize Brand
+1509,creed,love-in-black,Brand,creed,Creed,Standardize Brand
+1510,creed,himalaya,Brand,creed,Creed,Standardize Brand
+1511,creed,erolfa,Brand,creed,Creed,Standardize Brand
+1512,creed,bois-du-portugal,Brand,creed,Creed,Standardize Brand
+1513,creed,aventus-for-her,Brand,creed,Creed,Standardize Brand
+1514,creed,aventus-cologne,Brand,creed,Creed,Standardize Brand
+1515,creed,acqua-fiorentina,Brand,creed,Creed,Standardize Brand
+1533,clinique,clinique-happy,Duplicate,clinique-happy,clinique-happy,Remove Duplicate Row
+1536,clean,radiant-nectar,Brand,clean,Clean,Standardize Brand
+1537,clean,clean-warm-cotton,Brand,clean,Clean,Standardize Brand
+1562,chanel,pour-monsieur,Brand,chanel,Chanel,Standardize Brand
+1563,chanel,paris-venise,Brand,chanel,Chanel,Standardize Brand
+1564,chanel,les-exclusifs-de-chanel-coromandel,Brand,chanel,Chanel,Standardize Brand
+1565,chanel,les-exclusifs-de-chanel-31-rue-cambon,Brand,chanel,Chanel,Standardize Brand
+1566,chanel,le-lion-eau-de-parfum,Brand,chanel,Chanel,Standardize Brand
+1567,chanel,gardenia,Brand,chanel,Chanel,Standardize Brand
+1568,chanel,gabrielle-essence,Brand,chanel,Chanel,Standardize Brand
+1569,chanel,egoiste-platinum,Brand,chanel,Chanel,Standardize Brand
+1570,chanel,egoiste,Brand,chanel,Chanel,Standardize Brand
+1571,chanel,cristalle-eau-verte,Brand,chanel,Chanel,Standardize Brand
+1572,chanel,cristalle-eau-de-toilette,Brand,chanel,Chanel,Standardize Brand
+1573,chanel,cristalle-eau-de-parfum,Brand,chanel,Chanel,Standardize Brand
+1574,chanel,coromandel-eau-de-parfum,Brand,chanel,Chanel,Standardize Brand
+1575,chanel,coco-noir,Brand,chanel,Chanel,Standardize Brand
+1576,chanel,coco-mademoiselle-parfum,Brand,chanel,Chanel,Standardize Brand
+1577,chanel,coco-mademoiselle-intense,Brand,chanel,Chanel,Standardize Brand
+1578,chanel,coco-mademoiselle-eau-de-toilette,Brand,chanel,Chanel,Standardize Brand
+1579,chanel,coco-eau-de-toilette,Brand,chanel,Chanel,Standardize Brand
+1580,chanel,coco-eau-de-parfum,Brand,chanel,Chanel,Standardize Brand
+1581,chanel,chanel-no-5-parfum,Brand,chanel,Chanel,Standardize Brand
+1582,chanel,chanel-no-5-l-eau,Brand,chanel,Chanel,Standardize Brand
+1583,chanel,chanel-no-5-eau-premiere-2015,Brand,chanel,Chanel,Standardize Brand
+1584,chanel,chanel-no-5-eau-de-toilette,Brand,chanel,Chanel,Standardize Brand
+1585,chanel,chanel-no-5-eau-de-parfum,Brand,chanel,Chanel,Standardize Brand
+1586,chanel,chanel-no-19-poudre,Brand,chanel,Chanel,Standardize Brand
+1587,chanel,chanel-no-19-parfum,Brand,chanel,Chanel,Standardize Brand
+1588,chanel,chanel-no-19-eau-de-parfum,Brand,chanel,Chanel,Standardize Brand
+1589,chanel,chanel-n05-eau-premiere,Brand,chanel,Chanel,Standardize Brand
+1590,chanel,chanel-n022,Brand,chanel,Chanel,Standardize Brand
+1591,chanel,chanel-n019,Brand,chanel,Chanel,Standardize Brand
+1592,chanel,chance-eau-vive,Brand,chanel,Chanel,Standardize Brand
+1593,chanel,chance-eau-tendre-eau-de-parfum,Brand,chanel,Chanel,Standardize Brand
+1594,chanel,chance-eau-fraiche,Brand,chanel,Chanel,Standardize Brand
+1595,chanel,chance-eau-de-toilette,Brand,chanel,Chanel,Standardize Brand
+1596,chanel,chance-eau-de-parfum,Brand,chanel,Chanel,Standardize Brand
+1597,chanel,boy-eau-de-parfum,Brand,chanel,Chanel,Standardize Brand
+1598,chanel,bois-des-iles,Brand,chanel,Chanel,Standardize Brand
+1599,chanel,bleu-de-chanel-parfum,Brand,chanel,Chanel,Standardize Brand
+1600,chanel,bleu-de-chanel-eau-de-parfum,Brand,chanel,Chanel,Standardize Brand
+1601,chanel,antaeus,Brand,chanel,Chanel,Standardize Brand
+1602,chanel,allure-sensuelle,Brand,chanel,Chanel,Standardize Brand
+1603,chanel,allure-homme-sport-eau-extreme,Brand,chanel,Chanel,Standardize Brand
+1604,chanel,allure-homme-sport-cologne,Brand,chanel,Chanel,Standardize Brand
+1605,chanel,allure-homme-edition-blanche-eau-de-parfum,Brand,chanel,Chanel,Standardize Brand
+1606,chanel,allure-homme,Brand,chanel,Chanel,Standardize Brand
+1607,chanel,allure,Brand,chanel,Chanel,Standardize Brand
+1608,chanel,1957-eau-de-parfum,Brand,chanel,Chanel,Standardize Brand
+1707,byredo,sundazed,Brand,byredo,Byredo,Standardize Brand
+1708,byredo,rose-noir,Brand,byredo,Byredo,Standardize Brand
+1709,byredo,pulp,Brand,byredo,Byredo,Standardize Brand
+1710,byredo,oud-immortel,Brand,byredo,Byredo,Standardize Brand
+1711,byredo,inflorescence,Brand,byredo,Byredo,Standardize Brand
+1712,byredo,black-saffron,Brand,byredo,Byredo,Standardize Brand
+1713,byredo,bibliotheque,Brand,byredo,Byredo,Standardize Brand
+1714,byredo,1996-inez-vinoodh,Brand,byredo,Byredo,Standardize Brand
+1922,antonio-banderas,blue-seduction,Duplicate,blue-seduction,blue-seduction,Remove Duplicate Row
+1925,amouage,ubar,Brand,amouage,Amouage,Standardize Brand
+1926,amouage,the-library-collection-opus-vi,Brand,amouage,Amouage,Standardize Brand
+1927,amouage,the-library-collection-opus-v,Brand,amouage,Amouage,Standardize Brand
+1928,amouage,sunshine-woman,Brand,amouage,Amouage,Standardize Brand
+1929,amouage,sunshine-man,Brand,amouage,Amouage,Standardize Brand
+1930,amouage,reflection-woman,Brand,amouage,Amouage,Standardize Brand
+1931,amouage,reflection-man,Brand,amouage,Amouage,Standardize Brand
+1932,amouage,overture-man,Brand,amouage,Amouage,Standardize Brand
+1933,amouage,opus-xiv-royal-tobacco,Brand,amouage,Amouage,Standardize Brand
+1934,amouage,myths-woman,Brand,amouage,Amouage,Standardize Brand
+1935,amouage,myths-man,Brand,amouage,Amouage,Standardize Brand
+1936,amouage,memoir-woman,Brand,amouage,Amouage,Standardize Brand
+1937,amouage,memoir-man,Brand,amouage,Amouage,Standardize Brand
+1938,amouage,meander,Brand,amouage,Amouage,Standardize Brand
+1939,amouage,lyric-woman,Brand,amouage,Amouage,Standardize Brand
+1940,amouage,lyric-man,Brand,amouage,Amouage,Standardize Brand
+1941,amouage,love-tuberose,Brand,amouage,Amouage,Standardize Brand
+1942,amouage,love-mimosa,Brand,amouage,Amouage,Standardize Brand
+1943,amouage,lilac-love,Brand,amouage,Amouage,Standardize Brand
+1944,amouage,jubilation-xxv-man,Brand,amouage,Amouage,Standardize Brand
+1945,amouage,jubilation-25-woman,Brand,amouage,Amouage,Standardize Brand
+1946,amouage,journey-woman,Brand,amouage,Amouage,Standardize Brand
+1947,amouage,journey-man,Brand,amouage,Amouage,Standardize Brand
+1948,amouage,interlude-man,Brand,amouage,Amouage,Standardize Brand
+1949,amouage,interlude-black-iris,Brand,amouage,Amouage,Standardize Brand
+1950,amouage,imitation-woman,Brand,amouage,Amouage,Standardize Brand
+1951,amouage,honour-woman,Brand,amouage,Amouage,Standardize Brand
+1952,amouage,honour-man,Brand,amouage,Amouage,Standardize Brand
+1953,amouage,guidance,Brand,amouage,Amouage,Standardize Brand
+1954,amouage,gold-woman,Brand,amouage,Amouage,Standardize Brand
+1955,amouage,gold-man,Brand,amouage,Amouage,Standardize Brand
+1956,amouage,figment-woman,Brand,amouage,Amouage,Standardize Brand
+1957,amouage,fate-man,Brand,amouage,Amouage,Standardize Brand
+1958,amouage,epic-woman,Brand,amouage,Amouage,Standardize Brand
+1959,amouage,epic-man,Brand,amouage,Amouage,Standardize Brand
+1960,amouage,enclave,Brand,amouage,Amouage,Standardize Brand
+1961,amouage,dia-woman,Brand,amouage,Amouage,Standardize Brand
+1962,amouage,dia-man,Brand,amouage,Amouage,Standardize Brand
+1963,amouage,crimson-rocks,Brand,amouage,Amouage,Standardize Brand
+1964,amouage,ciel-pour-femme,Brand,amouage,Amouage,Standardize Brand
+1965,amouage,bracken-woman,Brand,amouage,Amouage,Standardize Brand
+1966,amouage,bracken-man,Brand,amouage,Amouage,Standardize Brand
+1967,amouage,blossom-love,Brand,amouage,Amouage,Standardize Brand
+1968,amouage,beloved-woman,Brand,amouage,Amouage,Standardize Brand
+1969,amouage,beach-hut-man,Brand,amouage,Amouage,Standardize Brand
+2003,BYREDO,Accord Oud,Brand,BYREDO,Byredo,Standardize Brand
+2036,La Maison de la  Vanille,Absolu de Vanille,Brand,La Maison de la  Vanille,La Maison de la Vanille,Standardize Brand
+2372,Goldfield & Banks,Bohemian Lime Parfum Concentrate,Brand,Goldfield & Banks,Goldfield and Banks,Standardize Brand
+2373,Goldfield & Banks,Velvet Splendour Perfume Concentrate,Brand,Goldfield & Banks,Goldfield and Banks,Standardize Brand
+2374,Goldfield & Banks,Southern Bloom Perfume Concentrate,Brand,Goldfield & Banks,Goldfield and Banks,Standardize Brand
+2375,Goldfield & Banks,Blue Cypress Perfume Concentrate,Brand,Goldfield & Banks,Goldfield and Banks,Standardize Brand
+2376,Goldfield & Banks,White Sandalwood Perfume Concentrate,Brand,Goldfield & Banks,Goldfield and Banks,Standardize Brand
+2377,Goldfield & Banks,Pacific Rock Moss Perfume Concentrate,Brand,Goldfield & Banks,Goldfield and Banks,Standardize Brand
+2378,Goldfield & Banks,Desert Rosewood Perfume Concentrate,Brand,Goldfield & Banks,Goldfield and Banks,Standardize Brand
+2379,Goldfield & Banks,Wood Infusion Perfume Concentrate,Brand,Goldfield & Banks,Goldfield and Banks,Standardize Brand
+2420,Fort & Manle,Meraki Eau de Parfum,Brand,Fort & Manle,Fort and Manle,Standardize Brand
+2421,Fort & Manle,Forty Thieves Eau de Parfum,Brand,Fort & Manle,Fort and Manle,Standardize Brand
+2422,Fort & Manle,Impressions de Giverny Eau de Parfum,Brand,Fort & Manle,Fort and Manle,Standardize Brand
+2423,Fort & Manle,Suleyman le Magnifique Eau de Parfum,Brand,Fort & Manle,Fort and Manle,Standardize Brand
+2424,Fort & Manle,Bojnokopff Eau de Parfum,Brand,Fort & Manle,Fort and Manle,Standardize Brand
+2425,Fort & Manle,Maduro Eau de Parfum,Brand,Fort & Manle,Fort and Manle,Standardize Brand
+2426,Fort & Manle,Harem Rose Eau de Parfum,Brand,Fort & Manle,Fort and Manle,Standardize Brand
+2427,Fort & Manle,Fatih Sultan Mehmed Eau de Parfum,Brand,Fort & Manle,Fort and Manle,Standardize Brand
+2429,Fort & Manle,Confessions of a Garden Gnome Eau de Parfum,Brand,Fort & Manle,Fort and Manle,Standardize Brand
+2430,Fort & Manle,Charlatan Eau de Parfum,Brand,Fort & Manle,Fort and Manle,Standardize Brand
+2431,Fort & Manle,Amber Absolutely Eau de Parfum,Brand,Fort & Manle,Fort and Manle,Standardize Brand
+2787,Shay & Blue,Blackberry Woods Eau de Parfum,Brand,Shay & Blue,Shay and Blue,Standardize Brand
+2788,Shay & Blue,White Peaches Eau de Parfum,Brand,Shay & Blue,Shay and Blue,Standardize Brand
+2789,Shay & Blue,Kings Wood Fragrance Concentree,Brand,Shay & Blue,Shay and Blue,Standardize Brand
+2790,Shay & Blue,Scarlet Lily Eau de Parfum,Brand,Shay & Blue,Shay and Blue,Standardize Brand
+2791,Shay & Blue,Dandelion Fig Eau de Parfum,Brand,Shay & Blue,Shay and Blue,Standardize Brand
+2792,Shay & Blue,Blueberry Musk Eau de Parfum,Brand,Shay & Blue,Shay and Blue,Standardize Brand
+2793,Shay & Blue,English Cherry Blossom Eau de Parfum,Brand,Shay & Blue,Shay and Blue,Standardize Brand
+2794,Shay & Blue,Framboise Noire Eau de Parfum,Brand,Shay & Blue,Shay and Blue,Standardize Brand
+2795,Shay & Blue,Oud Alif Fragrance Concentr챕e,Brand,Shay & Blue,Shay and Blue,Standardize Brand
+2796,Shay & Blue,Watermelons Natural Spray,Brand,Shay & Blue,Shay and Blue,Standardize Brand
+2797,Shay & Blue,Salt Caramel Eau de Parfum,Brand,Shay & Blue,Shay and Blue,Standardize Brand
+2798,Shay & Blue,Blacks Club Leather Fragrance Concentr챕e,Brand,Shay & Blue,Shay and Blue,Standardize Brand
+2799,Shay & Blue,Blood Oranges Eau de Parfum,Brand,Shay & Blue,Shay and Blue,Standardize Brand
+2800,Shay & Blue,Amber Rose Eau de Parfum,Brand,Shay & Blue,Shay and Blue,Standardize Brand
+2801,Shay & Blue,Atropa Belladonna Eau de Parfum,Brand,Shay & Blue,Shay and Blue,Standardize Brand
+3038,BYREDO,Suede Hand Wash,Brand,BYREDO,Byredo,Standardize Brand
+3039,BYREDO,Mojave Ghost Roll-on Oil Perfume Oil,Brand,BYREDO,Byredo,Standardize Brand
+3040,BYREDO,Mojave Ghost Hair Perfume,Brand,BYREDO,Byredo,Standardize Brand
+3041,BYREDO,La Tulipe Hair Perfume,Brand,BYREDO,Byredo,Standardize Brand
+3042,BYREDO,Super Cedar Eau de Parfum,Brand,BYREDO,Byredo,Standardize Brand
+3043,BYREDO,Rose of No Man's Land Eau de Parfum,Brand,BYREDO,Byredo,Standardize Brand
+3044,BYREDO,Bal d'Afrique Hair Perfume,Brand,BYREDO,Byredo,Standardize Brand
+3045,BYREDO,Blanche Hair Perfume,Brand,BYREDO,Byredo,Standardize Brand
+3046,BYREDO,Gypsy Water Hair Perfume,Brand,BYREDO,Byredo,Standardize Brand
+3047,BYREDO,Bal D'Afrique Roll-on Oil Perfume Oil,Brand,BYREDO,Byredo,Standardize Brand
+3048,BYREDO,Mojave Ghost Eau de Parfum,Brand,BYREDO,Byredo,Standardize Brand
+3049,BYREDO,Flowerhead Eau de Parfum,Brand,BYREDO,Byredo,Standardize Brand
+3050,BYREDO,Lil Fleur Eau de Parfum,Brand,BYREDO,Byredo,Standardize Brand
+3051,BYREDO,Slow Dance Eau de Parfum,Brand,BYREDO,Byredo,Standardize Brand
+3052,BYREDO,Sundazed Eau de Parfum,Brand,BYREDO,Byredo,Standardize Brand
+3053,BYREDO,Rose Of No Man's Land Hair Perfume,Brand,BYREDO,Byredo,Standardize Brand
+3054,BYREDO,1996 Eau de Parfum,Brand,BYREDO,Byredo,Standardize Brand
+3055,BYREDO,Inflorescence Eau de Parfum,Brand,BYREDO,Byredo,Standardize Brand
+3056,BYREDO,Black Saffron Eau de Parfum,Brand,BYREDO,Byredo,Standardize Brand
+3057,BYREDO,Oud Immortel Eau de Parfum,Brand,BYREDO,Byredo,Standardize Brand
+3058,BYREDO,Eleventh Hour Eau de Parfum,Brand,BYREDO,Byredo,Standardize Brand
+3059,BYREDO,Palermo Eau de Parfum,Brand,BYREDO,Byredo,Standardize Brand
+3060,BYREDO,La Tulipe Eau de Parfum,Brand,BYREDO,Byredo,Standardize Brand
+3061,BYREDO,Baudelaire Eau de Parfum,Brand,BYREDO,Byredo,Standardize Brand
+3062,BYREDO,Sunday Cologne Eau de Parfum,Brand,BYREDO,Byredo,Standardize Brand
+3063,BYREDO,Blanche Eau de Parfum,Brand,BYREDO,Byredo,Standardize Brand
+3064,BYREDO,Bal d'Afrique Eau de Parfum,Brand,BYREDO,Byredo,Standardize Brand
+3065,BYREDO,Rose Noir Eau de Parfum,Brand,BYREDO,Byredo,Standardize Brand
+3066,BYREDO,Gypsy Water Eau de Parfum,Brand,BYREDO,Byredo,Standardize Brand
+3067,BYREDO,Bibliotheque Eau de Parfum,Brand,BYREDO,Byredo,Standardize Brand
+3068,BYREDO,Velvet Haze Eau de Parfum,Brand,BYREDO,Byredo,Standardize Brand
+3069,BYREDO,Pulp Eau de Parfum,Brand,BYREDO,Byredo,Standardize Brand
+3070,BYREDO,Unnamed Eau de Parfum,Brand,BYREDO,Byredo,Standardize Brand
+3071,BYREDO,Suede Hand Lotion,Brand,BYREDO,Byredo,Standardize Brand
+3261,Oliver & Co.,Vetiverus Eau de parfum,Brand,Oliver & Co.,Oliver and Co.,Standardize Brand
+3262,Oliver & Co.,Resina Eau de Parfum,Brand,Oliver & Co.,Oliver and Co.,Standardize Brand
+3263,Oliver & Co.,Mousse II Eau de Parfum,Brand,Oliver & Co.,Oliver and Co.,Standardize Brand
+3428,Van Cleef & Arpels,Bois Dore Eau de Parfum,Brand,Van Cleef & Arpels,Van Cleef and Arpels,Standardize Brand
+3429,Van Cleef & Arpels,California Reverie Eau de Parfum,Brand,Van Cleef & Arpels,Van Cleef and Arpels,Standardize Brand
+3430,Van Cleef & Arpels,Precious Oud Eau de Parfum,Brand,Van Cleef & Arpels,Van Cleef and Arpels,Standardize Brand
+3431,Van Cleef & Arpels,Orchidee Vanille Eau de Parfum,Brand,Van Cleef & Arpels,Van Cleef and Arpels,Standardize Brand
+3432,Van Cleef & Arpels,Gardenia Petale Eau de Parfum,Brand,Van Cleef & Arpels,Van Cleef and Arpels,Standardize Brand
+4141,La Maison de la  Vanille,Vanille Fleurie de Tahiti Eau de Toilette,Brand,La Maison de la  Vanille,La Maison de la Vanille,Standardize Brand
+4142,La Maison de la  Vanille,Vanille Sauvage de Madagascar Eau de Toilette,Brand,La Maison de la  Vanille,La Maison de la Vanille,Standardize Brand
+4143,La Maison de la  Vanille,Vanille Givree des Antilles Eau de Toilette,Brand,La Maison de la  Vanille,La Maison de la Vanille,Standardize Brand
+4144,La Maison de la  Vanille,Vanille Noire du Mexique Eau de Toilette,Brand,La Maison de la  Vanille,La Maison de la Vanille,Standardize Brand

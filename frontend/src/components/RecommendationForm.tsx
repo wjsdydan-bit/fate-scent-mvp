@@ -15,14 +15,16 @@ const INTEREST_OPTIONS = [
     "금전운 💰", "연애운 💕", "학업운 📚", "취업/직장운 💼", "대인관계 🤝"
 ];
 
-export default function RecommendationForm({ userInfo, onNext, onReset }: any) {
+export default function RecommendationForm({ userInfo, onNext, onReset, apiError }: any) {
     const [prefTags, setPrefTags] = useState<string[]>([]);
     const [dislikeTags, setDislikeTags] = useState<string[]>([]);
     const [genderFilter, setGenderFilter] = useState("전체");
     const [interests, setInterests] = useState<string[]>([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleNextSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        setIsSubmitting(true);
         onNext({
             pref_tags: prefTags,
             dislike_tags: dislikeTags,
@@ -48,7 +50,7 @@ export default function RecommendationForm({ userInfo, onNext, onReset }: any) {
 
                         <div className="space-y-4">
                             <Label className="font-bold text-slate-800 text-base border-b border-slate-100 pb-2 block text-center">
-                                선호하는 향
+                                선호하는 향 <span className="text-slate-400 font-normal text-sm">(선택)</span>
                             </Label>
                             <div className="flex flex-wrap gap-2">
                                 {TAG_OPTIONS.map(tag => (
@@ -59,7 +61,7 @@ export default function RecommendationForm({ userInfo, onNext, onReset }: any) {
                                             if (dislikeTags.includes(tag)) toggleArrayItem(dislikeTags, setDislikeTags, tag);
                                             toggleArrayItem(prefTags, setPrefTags, tag);
                                         }}
-                                        className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${prefTags.includes(tag)
+                                        className={`px-3 py-2.5 rounded-full text-xs font-medium border transition-colors ${prefTags.includes(tag)
                                             ? 'bg-orange-100 border-orange-200 text-orange-800'
                                             : 'bg-white text-slate-500 hover:bg-slate-50'
                                             }`}
@@ -72,7 +74,7 @@ export default function RecommendationForm({ userInfo, onNext, onReset }: any) {
 
                         <div className="space-y-4">
                             <Label className="font-bold text-slate-800 text-base border-b border-slate-100 pb-2 block text-center">
-                                피하고 싶은 향
+                                피하고 싶은 향 <span className="text-slate-400 font-normal text-sm">(선택)</span>
                             </Label>
                             <div className="flex flex-wrap gap-2">
                                 {TAG_OPTIONS.filter(tag => !prefTags.includes(tag)).map(tag => (
@@ -80,7 +82,7 @@ export default function RecommendationForm({ userInfo, onNext, onReset }: any) {
                                         key={tag}
                                         type="button"
                                         onClick={() => toggleArrayItem(dislikeTags, setDislikeTags, tag)}
-                                        className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${dislikeTags.includes(tag)
+                                        className={`px-3 py-2.5 rounded-full text-xs font-medium border transition-colors ${dislikeTags.includes(tag)
                                             ? 'bg-red-100 border-red-200 text-red-800'
                                             : 'bg-white text-slate-500 hover:bg-slate-50'
                                             }`}
@@ -92,7 +94,9 @@ export default function RecommendationForm({ userInfo, onNext, onReset }: any) {
                         </div>
 
                         <div className="space-y-4 pt-2">
-                            <Label className="font-bold text-slate-800 text-base block border-b border-slate-100 pb-2 text-center">가장 끌어올리고 싶은 운</Label>
+                            <Label className="font-bold text-slate-800 text-base block border-b border-slate-100 pb-2 text-center">
+                                가장 끌어올리고 싶은 운 <span className="text-slate-400 font-normal text-sm">(선택)</span>
+                            </Label>
                             <div className="flex flex-wrap gap-2">
                                 {INTEREST_OPTIONS.map(interest => (
                                     <button
@@ -124,18 +128,21 @@ export default function RecommendationForm({ userInfo, onNext, onReset }: any) {
                             </RadioGroup>
                         </div>
 
+                        {apiError && !isSubmitting && <div className="text-sm text-red-500 font-bold text-center bg-red-50 p-3 rounded-xl border border-red-100" role="alert" aria-live="assertive">{apiError}</div>}
+
                         <Button
                             type="submit"
-                            className="w-full h-14 text-lg font-bold rounded-2xl bg-orange-500 hover:bg-orange-600 shadow-md mt-6 transition-transform active:scale-95 text-white"
+                            disabled={isSubmitting}
+                            className="w-full h-14 text-lg font-bold rounded-2xl bg-orange-500 hover:bg-orange-600 shadow-md mt-6 transition-transform active:scale-95 text-white disabled:opacity-70 disabled:cursor-not-allowed"
                         >
-                            결과 확인하기
+                            {isSubmitting ? "분석 중..." : "결과 확인하기"}
                         </Button>
 
                         <Button
                             type="button"
                             variant="ghost"
                             onClick={onReset}
-                            className="w-full text-slate-400 text-sm"
+                            className="w-full h-12 text-slate-400 text-sm"
                         >
                             사주 분석 다시보기
                         </Button>

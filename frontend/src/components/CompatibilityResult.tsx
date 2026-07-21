@@ -4,13 +4,20 @@ import { useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import PhotoShareOverlay from "./PhotoShareOverlay";
+import { 
+    Sprout, Flame, Mountain, Gem, Droplets, SprayCan, Share2, Info, Check, X, Heart, HeartCrack
+} from "lucide-react";
 
 const ELEMENTS = ["Wood", "Fire", "Earth", "Metal", "Water"];
 const ELEMENTS_KO: Record<string, string> = {
     Wood: "목(나무)", Fire: "화(불)", Earth: "토(흙)", Metal: "금(쇠)", Water: "수(물)"
 };
-const ELEMENT_EMOJI: Record<string, string> = {
-    Wood: "🌳", Fire: "🔥", Earth: "🏔️", Metal: "⚙️", Water: "💧"
+const ELEMENT_EMOJI: Record<string, React.ReactNode> = {
+    Wood: <Sprout className="w-4 h-4 text-green-500 inline-block" strokeWidth={1.75} aria-hidden="true" />,
+    Fire: <Flame className="w-4 h-4 text-red-500 inline-block" strokeWidth={1.75} aria-hidden="true" />,
+    Earth: <Mountain className="w-4 h-4 text-amber-600 inline-block" strokeWidth={1.75} aria-hidden="true" />,
+    Metal: <Gem className="w-4 h-4 text-slate-400 inline-block" strokeWidth={1.75} aria-hidden="true" />,
+    Water: <Droplets className="w-4 h-4 text-blue-500 inline-block" strokeWidth={1.75} aria-hidden="true" />
 };
 const ELEMENT_KEYWORDS: Record<string, string[]> = {
     Wood: [
@@ -90,7 +97,13 @@ export default function CompatibilityResult({ data, userInfo, onNext, onReset }:
     if (!data) return null;
 
     const { saju_data, compatibility_score, compatibility_result, perfume_details } = data;
-    const { strongest, weakest, pillars } = saju_data;
+    const strongElements: string[] = saju_data?.strongest_elements || [saju_data?.strongest].filter(Boolean);
+    const weakElements: string[] = saju_data?.weakest_elements || [saju_data?.weakest].filter(Boolean);
+    const strongest = strongElements[0] || "";
+    const weakest = weakElements[0] || "";
+    const strongestKo = strongElements.map((e: string) => ELEMENTS_KO[e] || e).join("·");
+    const weakestKo = weakElements.map((e: string) => ELEMENTS_KO[e] || e).join("·");
+    const { pillars } = saju_data;
     const perf_vec = perfume_details.element_vector;
     const cr = compatibility_result;
 
@@ -110,21 +123,16 @@ export default function CompatibilityResult({ data, userInfo, onNext, onReset }:
         if (!captureRef.current) return;
         try {
             const { toPng } = await import("html-to-image");
-
-            // Allow DOM to settle
             await new Promise(resolve => setTimeout(resolve, 50));
-
             const dataUrl = await toPng(captureRef.current, {
                 pixelRatio: 2,
                 backgroundColor: "#f8fafc"
             });
-
             const link = document.createElement("a");
             const filename = `fatescent_궁합결과_${userInfo?.user_name || "결과"}.png`;
-
             link.download = filename;
             link.href = dataUrl;
-            link.target = "_blank"; // Helpful for iOS Safari
+            link.target = "_blank";
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -164,7 +172,7 @@ export default function CompatibilityResult({ data, userInfo, onNext, onReset }:
                             {perfume_details.image_url ? (
                                 <img src={perfume_details.image_url} alt={perfume_details.name} crossOrigin="anonymous" className="w-16 h-16 object-contain bg-white border p-1 rounded-full shadow-sm mb-2" />
                             ) : (
-                                <span className="text-4xl bg-white border p-3 rounded-full shadow-sm mb-2 aspect-square flex items-center justify-center">🧴</span>
+                                <span className="bg-white border p-3 rounded-full shadow-sm mb-2 aspect-square flex items-center justify-center"><SprayCan className="w-8 h-8 text-slate-300" strokeWidth={1.5} aria-hidden="true" /></span>
                             )}
                             <span className="text-xs font-bold text-slate-700 text-center leading-tight max-w-[80px] break-words">
                                 {perfume_details.brand}<br />{perfume_details.name}
@@ -177,20 +185,20 @@ export default function CompatibilityResult({ data, userInfo, onNext, onReset }:
                     </div>
 
                     {/* One-liner */}
-                    <div className="text-lg font-extrabold text-slate-800 mt-2">
+                    <div className="text-lg font-extrabold text-slate-800 mt-2 px-4 leading-relaxed">
                         &ldquo;{cr.one_liner}&rdquo;
                     </div>
 
                     {/* Score comment */}
                     {cr.score_comment && (
-                        <div className="inline-block bg-white/80 backdrop-blur-sm text-sm font-bold text-slate-600 px-4 py-2 rounded-full shadow-sm border">
+                        <div className="inline-block bg-white/85 backdrop-blur-sm text-sm font-bold text-slate-600 px-5 py-2.5 rounded-full shadow-sm border border-slate-100 leading-normal">
                             {cr.score_comment}
                         </div>
                     )}
                 </div>
 
                 {/* Saju 8 Characters */}
-                <Card className="border-none shadow-sm bg-white overflow-hidden rounded-[2rem] border-slate-100 border">
+                <Card className="border shadow-sm bg-white overflow-hidden rounded-[2rem] border-slate-100 border">
                     <div className="bg-slate-50 text-slate-800 p-4 text-center font-extrabold text-base flex items-center justify-center gap-2 border-b">
                         나의 사주 팔자
                     </div>
@@ -201,37 +209,37 @@ export default function CompatibilityResult({ data, userInfo, onNext, onReset }:
                     </div>
                     <div className="grid grid-cols-4 divide-x border-b bg-white text-center">
                         {["day", "month", "year", "hour"].map(key => (
-                            <div key={key} className="py-3 font-bold text-lg flex flex-col items-center">
-                                <span className="text-xs mb-1">{ELEMENT_EMOJI[pillars[key]?.stem_element] || "❔"}</span>
+                            <div key={key} className="py-2.5 font-bold text-base flex flex-col items-center">
+                                <span className="mb-1 flex items-center justify-center">{ELEMENT_EMOJI[pillars[key]?.stem_element] || <span className="text-xs text-slate-300">?</span>}</span>
                                 {pillars[key]?.stem || "?"}
                             </div>
                         ))}
                     </div>
                     <div className="grid grid-cols-4 divide-x bg-white text-center">
                         {["day", "month", "year", "hour"].map(key => (
-                            <div key={key} className="py-3 font-bold text-lg flex flex-col items-center">
-                                <span className="text-xs mb-1">{ELEMENT_EMOJI[pillars[key]?.branch_element] || "❔"}</span>
+                            <div key={key} className="py-2.5 font-bold text-base flex flex-col items-center">
+                                <span className="mb-1 flex items-center justify-center">{ELEMENT_EMOJI[pillars[key]?.branch_element] || <span className="text-xs text-slate-300">?</span>}</span>
                                 {pillars[key]?.branch || "?"}
                             </div>
                         ))}
                     </div>
                 </Card>
 
-                {/* Saju Summary */}
-                <div className="grid grid-cols-2 gap-3">
+                {/* Saju Summary - grid spacing improved */}
+                <div className="grid grid-cols-2 gap-4">
                     <div className="bg-slate-50 border border-slate-100 p-5 rounded-[2rem] flex flex-col items-center shadow-sm">
                         <span className="text-xs font-bold text-slate-500 mb-2">내 강한 기운</span>
-                        <span className="text-3xl mb-1">{ELEMENT_EMOJI[strongest]}</span>
-                        <span className="font-extrabold text-slate-800">{ELEMENTS_KO[strongest]}</span>
+                        <span className="flex flex-wrap gap-1 mb-1.5">{strongElements.map((e: string, i) => <span key={i}>{ELEMENT_EMOJI[e]}</span>)}</span>
+                        <span className="font-extrabold text-slate-800 text-sm">{strongestKo}</span>
                     </div>
                     <div className="bg-slate-50 border border-slate-100 p-5 rounded-[2rem] flex flex-col items-center shadow-sm">
                         <span className="text-xs font-bold text-slate-500 mb-2">내 부족한 기운</span>
-                        <span className="text-3xl mb-1">{ELEMENT_EMOJI[weakest]}</span>
-                        <span className="font-extrabold text-slate-800">{ELEMENTS_KO[weakest]}</span>
+                        <span className="flex flex-wrap gap-1 mb-1.5">{weakElements.map((e: string, i) => <span key={i}>{ELEMENT_EMOJI[e]}</span>)}</span>
+                        <span className="font-extrabold text-slate-800 text-sm">{weakestKo}</span>
                     </div>
                 </div>
 
-                {/* 향수 오행 밸런스 - ALL 5 elements with note labels */}
+                {/* 향수 오행 밸런스 */}
                 <Card className="border shadow-sm border-slate-100 rounded-[2rem] overflow-hidden bg-white pt-5 pb-2">
                     <h3 className="font-extrabold text-center text-slate-800 mb-2 text-lg">향수의 오행 밸런스</h3>
                     <CardContent className="space-y-4 mt-4">
@@ -241,7 +249,7 @@ export default function CompatibilityResult({ data, userInfo, onNext, onReset }:
                             return (
                                 <div key={elem} className="space-y-1">
                                     <div className="flex justify-between text-sm font-bold text-slate-700">
-                                        <span>{ELEMENT_EMOJI[elem]} {ELEMENTS_KO[elem]}</span>
+                                        <span className="flex items-center gap-1">{ELEMENT_EMOJI[elem]} {ELEMENTS_KO[elem]}</span>
                                         <span>{val.toFixed(0)}%</span>
                                     </div>
                                     <div className="w-full bg-slate-100 rounded-full h-3">
@@ -254,33 +262,44 @@ export default function CompatibilityResult({ data, userInfo, onNext, onReset }:
                             );
                         })}
                     </CardContent>
-                    <div className="p-5 bg-slate-50 text-sm text-slate-700 leading-[1.85] border-t whitespace-pre-line">
-                        {cr.perf_element_summary}
-                    </div>
+                    {/* 중복 및 사주 요약 분석문이 다소 겹치는 부분을 위해 패딩 및 구조 압축 */}
+                    {cr.perf_element_summary && (
+                        <div className="p-5 bg-slate-50/70 text-sm text-slate-600 leading-relaxed border-t whitespace-pre-line font-medium">
+                            {cr.perf_element_summary}
+                        </div>
+                    )}
                 </Card>
 
-                {/* Pros & Cons */}
-                <div className="grid grid-cols-2 gap-3 mt-4">
-                    <div className="space-y-2">
-                        <h4 className="font-bold text-sm text-center text-emerald-700 bg-emerald-50 py-1.5 rounded-xl">💚 잘 맞는 이유</h4>
-                        <ul className="space-y-1.5">
+                {/* Pros & Cons - text size 12px -> 13.5px, padding/line-height optimized */}
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                    <div className="space-y-2.5">
+                        <h4 className="font-extrabold text-sm text-center text-emerald-800 bg-emerald-50 py-2 rounded-xl flex items-center justify-center gap-1.5"><Heart className="w-4 h-4 fill-emerald-600 text-emerald-600" strokeWidth={2} aria-hidden="true" /> 잘 맞는 이유</h4>
+                        <ul className="space-y-2">
                             {cr.good_reasons?.map((r: string, idx: number) => (
-                                <li key={idx} className="bg-white border text-[12px] p-2.5 rounded-xl shadow-sm text-slate-700 leading-tight">✔ {r}</li>
+                                <li key={idx} className="bg-white border text-[13.5px] p-3 rounded-xl shadow-sm text-slate-700 leading-relaxed flex items-start">
+                                    <Check className="w-3.5 h-3.5 text-emerald-600 mt-1 mr-1.5 shrink-0" strokeWidth={2.5} aria-hidden="true" />
+                                    <span>{r}</span>
+                                </li>
                             ))}
                         </ul>
                     </div>
-                    <div className="space-y-2">
-                        <h4 className="font-bold text-sm text-center text-rose-700 bg-rose-50 py-1.5 rounded-xl">💔 아쉬운 점</h4>
-                        <ul className="space-y-1.5">
+                    <div className="space-y-2.5">
+                        <h4 className="font-extrabold text-sm text-center text-rose-800 bg-rose-50 py-2 rounded-xl flex items-center justify-center gap-1.5"><HeartCrack className="w-4 h-4 fill-rose-600 text-rose-600" strokeWidth={2} aria-hidden="true" /> 아쉬운 점</h4>
+                        <ul className="space-y-2">
                             {cr.bad_reasons?.map((r: string, idx: number) => (
-                                <li key={idx} className="bg-white border text-[12px] p-2.5 rounded-xl shadow-sm text-slate-700 leading-tight">✖ {r}</li>
+                                <li key={idx} className="bg-white border text-[13.5px] p-3 rounded-xl shadow-sm text-slate-700 leading-relaxed flex items-start">
+                                    <X className="w-3.5 h-3.5 text-rose-600 mt-1 mr-1.5 shrink-0" strokeWidth={2.5} aria-hidden="true" />
+                                    <span>{r}</span>
+                                </li>
                             ))}
                         </ul>
                     </div>
                 </div>
 
                 {perfume_details.source === "ai" && (
-                    <p className="text-xs text-center text-slate-400 mt-2">💡 이 향수는 DB에 없어 노트를 추론했습니다.</p>
+                    <p className="text-xs text-center text-slate-400 mt-2 flex items-center justify-center gap-1">
+                        <Info className="w-3.5 h-3.5" strokeWidth={2} aria-hidden="true" /> 이 향수는 DB에 없어 노트를 추론했습니다.
+                    </p>
                 )}
             </div>
 
@@ -290,7 +309,7 @@ export default function CompatibilityResult({ data, userInfo, onNext, onReset }:
                     variant="default"
                     className="flex-1 h-16 text-base font-extrabold rounded-2xl bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white shadow-lg shadow-fuchsia-500/30 transition-all active:scale-95 flex items-center justify-center gap-2"
                 >
-                    <span className="text-xl">📸</span> 내 사진에 결과 입히기
+                    <Share2 className="w-5 h-5" strokeWidth={2} aria-hidden="true" /> 내 사진에 결과 입히기
                 </Button>
             </div>
 
@@ -315,7 +334,7 @@ export default function CompatibilityResult({ data, userInfo, onNext, onReset }:
                 type="button"
                 variant="ghost"
                 onClick={onReset}
-                className="w-full text-slate-400 text-sm mt-1"
+                className="w-full h-12 text-slate-400 text-sm mt-1"
             >
                 처음으로 돌아가기
             </Button>

@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Rnd } from "react-rnd";
+import { Sprout, Flame, Mountain, Gem, Droplets, Camera, Award, Heart, SprayCan } from "lucide-react";
 
 interface PhotoShareOverlayProps {
     userInfo: {
@@ -16,7 +17,7 @@ interface PhotoShareOverlayProps {
         notes?: string | string[];
     };
     sajuData: {
-        strongest: string;
+        strongest: string; // "Wood" 또는 "Wood·Fire" 같은 동률 결합 형태 대응
         weakest: string;
     };
     additionalData: {
@@ -31,8 +32,12 @@ interface PhotoShareOverlayProps {
 const ELEMENTS_KO: Record<string, string> = {
     Wood: "목(나무)", Fire: "화(불)", Earth: "토(흙)", Metal: "금(쇠)", Water: "수(물)"
 };
-const ELEMENT_EMOJI: Record<string, string> = {
-    Wood: "🌳", Fire: "🔥", Earth: "🏔️", Metal: "⚙️", Water: "💧"
+const ELEMENT_EMOJI: Record<string, React.ReactNode> = {
+    Wood: <Sprout className="w-4 h-4 text-green-500" strokeWidth={1.75} aria-hidden="true" />,
+    Fire: <Flame className="w-4 h-4 text-red-500" strokeWidth={1.75} aria-hidden="true" />,
+    Earth: <Mountain className="w-4 h-4 text-amber-600" strokeWidth={1.75} aria-hidden="true" />,
+    Metal: <Gem className="w-4 h-4 text-slate-300" strokeWidth={1.75} aria-hidden="true" />,
+    Water: <Droplets className="w-4 h-4 text-blue-500" strokeWidth={1.75} aria-hidden="true" />
 };
 
 const Sticker = ({
@@ -154,18 +159,15 @@ export default function PhotoShareOverlay({
         try {
             const { toPng } = await import("html-to-image");
 
-            // Hide rotation handles temporarily for capture
             const handles = document.querySelectorAll('.rotation-handle');
             handles.forEach((h: any) => h.style.display = 'none');
 
-            // Force a small delay to ensure DOM updates are applied
             await new Promise(resolve => setTimeout(resolve, 50));
 
             const dataUrl = await toPng(captureRef.current, {
                 pixelRatio: 2,
             });
 
-            // Restore handles
             handles.forEach((h: any) => h.style.display = '');
 
             const link = document.createElement("a");
@@ -174,7 +176,7 @@ export default function PhotoShareOverlay({
 
             link.download = filename;
             link.href = dataUrl;
-            link.target = "_blank"; // Helpful for iOS Safari
+            link.target = "_blank";
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -184,12 +186,19 @@ export default function PhotoShareOverlay({
         }
     };
 
-
     const textColor = theme === 'white' ? "text-white" : "text-slate-900";
     const textShadow = theme === 'white'
         ? "drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]"
         : "drop-shadow-[0_2px_2px_rgba(255,255,255,0.8)]";
 
+    // 동률 오행 처리를 위한 헬퍼 (예: "Wood·Fire" -> ["Wood", "Fire"])
+    const parseElements = (elemStr: string): string[] => {
+        if (!elemStr) return [];
+        return elemStr.split('·').map(s => s.trim()).filter(Boolean);
+    };
+
+    const strongestList = parseElements(sajuData.strongest);
+    const weakestList = parseElements(sajuData.weakest);
 
     return (
         <div className="fixed inset-0 z-50 flex flex-col bg-slate-900/95 backdrop-blur-md items-center overflow-y-auto">
@@ -209,7 +218,7 @@ export default function PhotoShareOverlay({
             <div className="w-full max-w-[380px] px-4 flex-1 flex flex-col items-center">
                 {!bgImage ? (
                     <div className="w-full aspect-[3/4] rounded-[2.5rem] bg-white/5 border-2 border-dashed border-white/20 flex flex-col items-center justify-center space-y-4 mb-6 shadow-2xl transition hover:bg-white/10 active:scale-95 cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-                        <div className="text-5xl drop-shadow-lg">📸</div>
+                        <Camera className="w-12 h-12 text-white/80 drop-shadow-lg mx-auto" strokeWidth={1.5} aria-hidden="true" />
                         <div className="text-white/60 font-bold text-center">
                             여기를 눌러<br />배경 사진을 선택해주세요
                         </div>
@@ -225,9 +234,7 @@ export default function PhotoShareOverlay({
                     <div className="relative w-full aspect-[3/4] mb-6 rounded-[2rem] overflow-hidden shadow-2xl ring-1 ring-white/20">
                         {/* Capture Target Area */}
                         <div ref={captureRef} className="w-full h-full relative flex flex-col bg-black">
-                            {/* Background Image */}
                             <img src={bgImage} alt="Background" className="absolute inset-0 w-full h-full object-cover z-0" />
-                            {/* Subtler gradient just for readability at the top and bottom */}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 z-0 pointer-events-none"></div>
 
                             {/* Minimal Watermark */}
@@ -238,8 +245,8 @@ export default function PhotoShareOverlay({
                             {/* Draggable: Title / Score */}
                             <Sticker id="sticker-title" defaultX={40} defaultY={40} baseWidth={280} baseHeight={60} angle={angleTop} setAngle={setAngleTop} startRotate={startRotate}>
                                 {additionalData.type === "recommendation" ? (
-                                    <div className={`font-black text-[36px] tracking-tighter whitespace-nowrap ${textColor} ${textShadow}`}>
-                                        👑 케미 1등 향수
+                                    <div className={`font-black text-[36px] tracking-tighter whitespace-nowrap flex items-center justify-center gap-2 ${textColor} ${textShadow}`}>
+                                        <Award className="w-8 h-8 text-orange-400" strokeWidth={2} aria-hidden="true" /> 케미 1등 향수
                                     </div>
                                 ) : (
                                     <div className={`flex items-baseline gap-1 ${textColor} ${textShadow}`}>
@@ -253,12 +260,17 @@ export default function PhotoShareOverlay({
                                 )}
                             </Sticker>
 
-                            {/* Draggable: Saju Badge Support - Recommendation Only */}
-                            {additionalData.type === "recommendation" && (
-                                <Sticker id="sticker-saju" defaultX={40} defaultY={280} baseWidth={140} baseHeight={30} angle={angleSaju} setAngle={setAngleSaju} startRotate={startRotate}>
-                                    <div className={`flex items-center justify-center gap-1.5 text-[14px] font-bold px-2 py-1 ${textColor} ${textShadow} w-full h-full`}>
-                                        <span>{ELEMENT_EMOJI[sajuData.strongest]}</span>
-                                        <span>{ELEMENTS_KO[sajuData.strongest].split('(')[0]} 기운 보충</span>
+                            {/* Draggable: Saju Badge Support - flex flex-wrap 및 동률 오행 처리 */}
+                            {additionalData.type === "recommendation" && weakestList.length > 0 && (
+                                <Sticker id="sticker-saju" defaultX={40} defaultY={240} baseWidth={280} baseHeight={45} angle={angleSaju} setAngle={setAngleSaju} startRotate={startRotate}>
+                                    <div className={`flex flex-wrap items-center justify-center gap-1.5 text-[14px] font-bold px-3 py-1.5 ${textColor} ${textShadow} w-full h-full rounded-full bg-black/10 backdrop-blur-[2px]`}>
+                                        {weakestList.map(e => (
+                                            <span key={e} className="flex items-center gap-0.5">
+                                                {ELEMENT_EMOJI[e]}
+                                                {ELEMENTS_KO[e]?.split('(')[0]}
+                                            </span>
+                                        ))}
+                                        <span>기운 보완 처방</span>
                                     </div>
                                 </Sticker>
                             )}
@@ -266,7 +278,7 @@ export default function PhotoShareOverlay({
                             {/* Draggable: Heart Emoji - Compatibility Only */}
                             {additionalData.type === "compatibility" && (
                                 <Sticker id="sticker-heart" defaultX={300} defaultY={40} baseWidth={60} baseHeight={60} angle={angleHeart} setAngle={setAngleHeart} startRotate={startRotate}>
-                                    <div className="text-[40px] drop-shadow-md cursor-grab">❤️</div>
+                                    <div className="drop-shadow-md cursor-grab"><Heart className="w-12 h-12 text-red-500 fill-red-500" strokeWidth={2} aria-hidden="true" /></div>
                                 </Sticker>
                             )}
 
@@ -281,7 +293,7 @@ export default function PhotoShareOverlay({
 
                             {/* Draggable: Perfume Brand */}
                             {perfumeDetails.brand && (
-                                <Sticker id="sticker-brand" defaultX={40} defaultY={320} baseWidth={160} baseHeight={30} angle={angleBrand} setAngle={setAngleBrand} startRotate={startRotate}>
+                                <Sticker id="sticker-brand" defaultX={40} defaultY={300} baseWidth={200} baseHeight={30} angle={angleBrand} setAngle={setAngleBrand} startRotate={startRotate}>
                                     <div className={`flex items-center justify-center gap-1.5 px-2 py-1 w-full h-full ${textColor} ${textShadow}`}>
                                         <div className={`font-extrabold text-[16px] leading-tight`}>{perfumeDetails.brand}</div>
                                     </div>
@@ -289,16 +301,13 @@ export default function PhotoShareOverlay({
                             )}
 
                             {/* Draggable: Perfume Name */}
-                            <Sticker id="sticker-name" defaultX={40} defaultY={360} baseWidth={260} baseHeight={80} angle={angleName} setAngle={setAngleName} startRotate={startRotate}>
-                                <div className={`font-black text-[30px] leading-snug whitespace-normal break-keep text-center ${textColor} ${textShadow} w-full h-full flex items-center justify-center`}>
-                                    {perfumeDetails.name}{additionalData.type === "compatibility" ? " 🧴" : ""}
+                            <Sticker id="sticker-name" defaultX={40} defaultY={340} baseWidth={280} baseHeight={80} angle={angleName} setAngle={setAngleName} startRotate={startRotate}>
+                                <div className={`font-black text-[28px] leading-snug whitespace-normal break-keep text-center ${textColor} ${textShadow} w-full h-full flex items-center justify-center`}>
+                                    {perfumeDetails.name}{additionalData.type === "compatibility" && <SprayCan className="w-7 h-7 inline-block ml-2 text-current opacity-80" strokeWidth={2} aria-hidden="true" />}
                                 </div>
                             </Sticker>
-
-                            {/* End of Stickers */}
                         </div>
 
-                        {/* Re-upload Button Overlay (outside capture context) */}
                         <button
                             onClick={() => fileInputRef.current?.click()}
                             className="absolute top-4 right-4 bg-black/40 hover:bg-black/60 backdrop-blur-md text-white border border-white/20 px-3 py-1.5 rounded-full text-[11px] font-bold shadow-lg transition z-20"
@@ -319,9 +328,9 @@ export default function PhotoShareOverlay({
                     <div className="w-full space-y-3 pb-8">
                         <Button
                             onClick={handleCapture}
-                            className="w-full h-14 text-base font-bold rounded-2xl bg-orange-500 hover:bg-orange-600 shadow-xl transition-all active:scale-95 text-white"
+                            className="w-full h-14 text-base font-bold rounded-2xl bg-orange-500 hover:bg-orange-600 shadow-xl transition-all active:scale-95 text-white flex items-center justify-center gap-2"
                         >
-                            📸 완성된 사진 저장하기
+                            <Camera className="w-5 h-5" strokeWidth={2} aria-hidden="true" /> 완성된 사진 저장하기
                         </Button>
                         <Button
                             onClick={onClose}
