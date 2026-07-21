@@ -1,3 +1,4 @@
+// Onboarding Landing page with scaled visual elements
 import React, { useState, useRef, useEffect } from 'react';
 import { Compass, Heart, Sparkles, Award, ArrowRight, ArrowLeft, ArrowDown } from 'lucide-react';
 
